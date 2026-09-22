@@ -5,9 +5,6 @@ const mailerService = require('../config/mailer');
 const { ApiError } = require('../middlewares/errorMiddleware');
 
 class AuthService {
-  /**
-   * Register a new user
-   */
   async register({ login, password, passwordConfirmation, full_name, email }) {
     if (!login || !password || !passwordConfirmation || !email) {
       throw ApiError.badRequest('Missing required fields (login, password, passwordConfirmation, email).');
@@ -44,19 +41,15 @@ class AuthService {
       confirm_token: confirmToken
     });
 
-    // Send email simulation
     await mailerService.sendConfirmationEmail(email, confirmToken);
 
     return {
       message: 'Registration successful! Please check your email to confirm your account.',
       userId,
-      confirmToken // Included for easy dev testing
+      confirmToken
     };
   }
 
-  /**
-   * Confirm email via token
-   */
   async confirmEmail(confirmToken) {
     if (!confirmToken) {
       throw ApiError.badRequest('Confirmation token is required.');
@@ -71,9 +64,6 @@ class AuthService {
     return { message: 'Email address confirmed successfully! You can now log in.' };
   }
 
-  /**
-   * Login user (Only for users with confirmed email)
-   */
   async login(loginOrEmail, password) {
     if (!loginOrEmail || !password) {
       throw ApiError.badRequest('Login/email and password are required.');
@@ -108,9 +98,6 @@ class AuthService {
     };
   }
 
-  /**
-   * Request password reset link
-   */
   async requestPasswordReset(email) {
     if (!email) {
       throw ApiError.badRequest('Email address is required.');
@@ -122,25 +109,21 @@ class AuthService {
 
     const user = await userRepository.findByEmail(email);
     if (!user) {
-      // Return success message anyway for security reasons, but only log token if user exists
       return { message: 'If an account with that email exists, password reset instructions have been sent.' };
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 3600000); // 1 hour from now
+    const expiresAt = new Date(Date.now() + 3600000);
 
     await userRepository.saveResetToken(user.id, resetToken, expiresAt);
     await mailerService.sendPasswordResetEmail(email, resetToken);
 
     return {
       message: 'Password reset link sent to your email.',
-      resetToken // Included for easy dev testing
+      resetToken
     };
   }
 
-  /**
-   * Confirm password reset with new password
-   */
   async confirmPasswordReset(confirmToken, newPassword, newPasswordConfirmation) {
     if (!confirmToken) {
       throw ApiError.badRequest('Reset token is required.');

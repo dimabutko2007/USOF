@@ -14,7 +14,6 @@ if (!fs.existsSync(postsUploadsDir)) {
   fs.mkdirSync(postsUploadsDir, { recursive: true });
 }
 
-// Avatar storage
 const avatarStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadsDir);
@@ -26,7 +25,6 @@ const avatarStorage = multer.diskStorage({
   }
 });
 
-// Post images storage
 const postImagesStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, postsUploadsDir);
@@ -53,7 +51,7 @@ const uploadAvatar = multer({
   storage: avatarStorage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+    fileSize: 5 * 1024 * 1024
   }
 });
 
@@ -61,11 +59,10 @@ const uploadPostImages = multer({
   storage: postImagesStorage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB per file
+    fileSize: 5 * 1024 * 1024
   }
 });
 
 module.exports = uploadAvatar;
 module.exports.uploadAvatar = uploadAvatar;
 module.exports.uploadPostImages = uploadPostImages;
-

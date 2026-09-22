@@ -22,7 +22,7 @@ async function seedDatabase() {
 
     const hashedPassword = await bcrypt.hash('password123', 10);
 
-    // 1. Seed Users (1 Admin, 4 Regular Users)
+    // 1. Seed Users
     const users = [
       ['admin', hashedPassword, 'Admin User', 'admin@usof.local', 1, 'admin', 0],
       ['johndoe', hashedPassword, 'John Doe', 'john@example.com', 1, 'user', 0],
@@ -38,7 +38,7 @@ async function seedDatabase() {
       );
     }
 
-    // 2. Seed Categories (5 items)
+    // 2. Seed Categories
     const categories = [
       ['JavaScript', 'All about modern JavaScript, ES6+, and async programming.'],
       ['Node.js & Express', 'Backend development, web servers, and middleware.'],
@@ -54,7 +54,7 @@ async function seedDatabase() {
       );
     }
 
-    // 3. Seed Posts (5 items)
+    // 3. Seed Posts
     const posts = [
       [1, 'Welcome to USOF Platform!', 'This is the official announcement for the USOF backend platform. Ask questions and share knowledge!', 'active'],
       [2, 'How to structure Node.js apps with MVC & SOLID?', 'What are the best practices for separating controllers, services, and repositories in Node.js?', 'active'],
@@ -70,14 +70,14 @@ async function seedDatabase() {
       );
     }
 
-    // 4. Seed Post_Categories (Many-to-Many mappings)
+    // 4. Seed Post_Categories
     const postCategories = [
-      [1, 5], // Post 1 -> General
-      [2, 2], // Post 2 -> Node.js
-      [2, 4], // Post 2 -> Architecture
-      [3, 3], // Post 3 -> MySQL
-      [4, 1], // Post 4 -> JavaScript
-      [5, 4]  // Post 5 -> Architecture
+      [1, 5],
+      [2, 2],
+      [2, 4],
+      [3, 3],
+      [4, 1],
+      [5, 4]
     ];
 
     for (const pc of postCategories) {
@@ -87,7 +87,7 @@ async function seedDatabase() {
       );
     }
 
-    // 5. Seed Comments (5 items)
+    // 5. Seed Comments
     const comments = [
       [2, 1, 'Great to see this platform launched!'],
       [3, 2, 'Layering controllers, services, and repositories makes code much easier to test.'],
@@ -103,7 +103,7 @@ async function seedDatabase() {
       );
     }
 
-    // 6. Seed Likes (5 items)
+    // 6. Seed Likes
     const likes = [
       [2, 'post', 1, 'like'],
       [3, 'post', 1, 'like'],
@@ -120,9 +120,6 @@ async function seedDatabase() {
     }
 
     // 7. Update User Ratings based on seed likes
-    // Author of Post 1 (id: 1) got 2 likes -> rating +2
-    // Author of Post 2 (id: 2) got 1 like, 1 dislike -> rating 0
-    // Author of Comment 2 (id: 3) got 1 like -> rating +1
     await connection.query(`
       UPDATE users u
       SET rating = (

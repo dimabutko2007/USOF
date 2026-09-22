@@ -41,7 +41,6 @@ class UserController {
       const userId = req.session.user.id;
       const result = await userService.updateAvatar(userId, req.file);
 
-      // Update active session profile picture
       req.session.user.profile_picture = result.profile_picture;
 
       res.status(200).json({ status: 'success', ...result });
@@ -60,7 +59,6 @@ class UserController {
         req.session.user
       );
 
-      // If user updated their own profile, update session
       if (req.session.user.id === parseInt(user_id, 10)) {
         req.session.user.login = updatedUser.login;
         req.session.user.full_name = updatedUser.full_name;
@@ -79,7 +77,6 @@ class UserController {
       const { user_id } = req.params;
       const result = await userService.deleteUser(user_id, req.session.user);
 
-      // If user deleted their own account, destroy session
       if (req.session.user.id === parseInt(user_id, 10)) {
         req.session.destroy();
         res.clearCookie('connect.sid');

@@ -5,9 +5,6 @@ const userRepository = require('../repositories/userRepository');
 const { ApiError } = require('../middlewares/errorMiddleware');
 
 class LikeService {
-  /**
-   * Helper to verify target existence and get target author ID
-   */
   async _getTargetAuthorId(targetType, targetId) {
     if (targetType === 'post') {
       const post = await postRepository.findById(targetId);
@@ -41,7 +38,6 @@ class LikeService {
       type
     });
 
-    // Automatically recalculate target author rating
     await userRepository.recalculateRating(targetAuthorId);
 
     return {
@@ -62,7 +58,6 @@ class LikeService {
 
     await likeRepository.delete(currentUser.id, targetType, targetId);
 
-    // Automatically recalculate target author rating
     await userRepository.recalculateRating(targetAuthorId);
 
     return { message: 'Reaction deleted successfully.' };

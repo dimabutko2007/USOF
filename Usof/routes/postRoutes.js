@@ -14,7 +14,6 @@ router.patch('/:post_id', isAuthenticated, postController.updatePost);
 router.patch('/:post_id/status', isAuthenticated, checkRole('admin'), postController.updateStatus);
 router.delete('/:post_id', isAuthenticated, postController.deletePost);
 
-// Subscription endpoints
 router.post('/:post_id/subscribe', isAuthenticated, subscriptionController.subscribe);
 router.delete('/:post_id/subscribe', isAuthenticated, subscriptionController.unsubscribe);
 

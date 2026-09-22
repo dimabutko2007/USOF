@@ -43,7 +43,6 @@ function errorHandler(err, req, res, next) {
 
   console.error('Unhandled Error Stack:', err.stack || err.message);
 
-  // Handle Multer upload errors
   if (err.name === 'MulterError') {
     return res.status(400).json({
       status: 'error',

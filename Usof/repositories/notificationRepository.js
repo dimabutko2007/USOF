@@ -1,9 +1,6 @@
 const { pool } = require('../config/db');
 
 class NotificationRepository {
-  /**
-   * Create notifications in bulk for a list of user IDs
-   */
   async createBulk(userIds, message) {
     if (!userIds || userIds.length === 0) return true;
 
@@ -13,9 +10,6 @@ class NotificationRepository {
     return true;
   }
 
-  /**
-   * Get notifications for a user
-   */
   async findByUserId(userId) {
     const sql = `
       SELECT id, user_id, message, is_read, created_at
@@ -27,9 +21,6 @@ class NotificationRepository {
     return rows;
   }
 
-  /**
-   * Mark notification as read
-   */
   async markAsRead(notificationId, userId) {
     const sql = `
       UPDATE notifications
@@ -40,9 +31,6 @@ class NotificationRepository {
     return result.affectedRows > 0;
   }
 
-  /**
-   * Find single notification by ID
-   */
   async findById(notificationId) {
     const [rows] = await pool.query(
       `SELECT id, user_id, message, is_read, created_at FROM notifications WHERE id = ?;`,

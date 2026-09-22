@@ -1,18 +1,14 @@
 const { pool } = require('../config/db');
 
 class CommentRepository {
-  /**
-   * Find comments for a specific post with author details & likes count
-   */
   async findCommentsByPostId(postId, currentUser = null) {
     let statusCondition = `c.status = 'active'`;
     const params = [postId];
 
     if (currentUser) {
       if (currentUser.role === 'admin') {
-        statusCondition = `1=1`; // Admin sees all comments
+        statusCondition = `1=1`;
       } else {
-        // User sees active comments + their own inactive comments
         statusCondition = `(c.status = 'active' OR c.author_id = ?)`;
         params.unshift(currentUser.id);
       }
@@ -33,9 +29,6 @@ class CommentRepository {
     return rows;
   }
 
-  /**
-   * Find comment by ID
-   */
   async findById(id) {
     const [rows] = await pool.query(
       `SELECT c.id, c.author_id, u.login AS author_login, u.profile_picture AS author_avatar,
@@ -51,9 +44,6 @@ class CommentRepository {
     return rows[0] || null;
   }
 
-  /**
-   * Create new comment
-   */
   async create({ author_id, post_id, content }) {
     const [result] = await pool.query(
       `INSERT INTO comments (author_id, post_id, content, status) VALUES (?, ?, ?, 'active');`,
@@ -62,10 +52,6 @@ class CommentRepository {
     return result.insertId;
   }
 
-  /**
-   * Update comment status (active / inactive)
-   * Note: Comment text content is NOT editable per requirement specs
-   */
   async updateStatus(id, status) {
     const [result] = await pool.query(
       `UPDATE comments SET status = ? WHERE id = ?;`,
@@ -74,9 +60,6 @@ class CommentRepository {
     return result.affectedRows > 0;
   }
 
-  /**
-   * Delete comment
-   */
   async delete(id) {
     const [result] = await pool.query(
       `DELETE FROM comments WHERE id = ?;`,

@@ -49,7 +49,6 @@ class CommentService {
 
     const newComment = await commentRepository.findById(commentId);
     
-    // Notify subscribers of the post (excluding author of comment)
     await notificationService.notifyPostSubscribers(
       postId,
       `New comment on post "${post.title}": ${content.trim().substring(0, 50)}...`,
@@ -69,7 +68,6 @@ class CommentService {
       throw ApiError.notFound('Comment not found.');
     }
 
-    // Status change authorization: Author or Admin
     if (currentUser.role !== 'admin' && currentUser.id !== comment.author_id) {
       throw ApiError.forbidden('You are not authorized to change this comment status.');
     }

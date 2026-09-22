@@ -33,7 +33,6 @@ class AuthController {
       const loginOrEmail = login || email;
       const user = await authService.login(loginOrEmail, password);
 
-      // Save user session
       req.session.user = user;
 
       res.status(200).json({

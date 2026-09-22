@@ -13,10 +13,8 @@ const dbConfig = {
   dateStrings: true
 };
 
-// Create a pool for application database queries
 const pool = mysql.createPool(dbConfig);
 
-// Helper function to create a connection without database selection (used during DB initialization)
 async function createServerConnection() {
   return await mysql.createConnection({
     host: dbConfig.host,

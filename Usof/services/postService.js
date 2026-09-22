@@ -17,7 +17,6 @@ class PostService {
       throw ApiError.notFound('Post not found.');
     }
 
-    // Visibility rules: inactive posts hidden from non-authors and non-admins
     if (post.status === 'inactive') {
       if (!currentUser || (currentUser.role !== 'admin' && currentUser.id !== post.author_id)) {
         throw ApiError.notFound('Post not found or unavailable.');
@@ -69,19 +68,15 @@ class PostService {
       throw ApiError.notFound('Post not found.');
     }
 
-    // Status inactive lock check: content cannot be edited when post is inactive
     if (post.status === 'inactive') {
       throw ApiError.forbidden('Inactive/locked posts cannot be edited.');
     }
-
-    // Only author can update title/content/categories
     if (post.author_id !== currentUser.id) {
       throw ApiError.forbidden('Only the author of the post can edit it.');
     }
 
     await postRepository.update(postId, { title, content, categories });
 
-    // Status change by admin if provided
     if (status && currentUser.role === 'admin') {
       await postRepository.updateStatus(postId, status);
       await notificationService.notifyPostSubscribers(postId, `Status of post #${postId} changed to ${status}`, currentUser.id);
@@ -115,7 +110,6 @@ class PostService {
       throw ApiError.notFound('Post not found.');
     }
 
-    // Author or Admin can delete post
     if (currentUser.role !== 'admin' && currentUser.id !== post.author_id) {
       throw ApiError.forbidden('You are not authorized to delete this post.');
     }

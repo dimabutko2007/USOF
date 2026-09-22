@@ -25,7 +25,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded static files (avatars, images)
+// Serve uploaded static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // MySQL Session Store configuration
@@ -51,8 +51,8 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: false, // Set to true if using HTTPS in production
-      maxAge: 86400000 // 24 hours
+      secure: false,
+      maxAge: 86400000
     }
   })
 );

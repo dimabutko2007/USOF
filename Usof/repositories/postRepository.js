@@ -1,15 +1,11 @@
 const { pool } = require('../config/db');
 
 class PostRepository {
-  /**
-   * Find all posts with pagination, filtering, sorting, and RBAC visibility rules
-   */
   async findAll({ page = 1, limit = 10, sort = 'likes', categories, startDate, endDate, status }, currentUser = null) {
     const offset = (page - 1) * limit;
     const whereConditions = [];
     const params = [];
 
-    // 1. Visibility rules based on RBAC & status filter
     if (!currentUser) {
       whereConditions.push(`p.status = 'active'`);
     } else if (currentUser.role === 'admin') {
@@ -18,7 +14,6 @@ class PostRepository {
         params.push(status);
       }
     } else {
-      // Regular user: can see active posts or their own inactive posts
       if (status === 'inactive') {
         whereConditions.push(`p.status = 'inactive' AND p.author_id = ?`);
         params.push(currentUser.id);
@@ -30,7 +25,6 @@ class PostRepository {
       }
     }
 
-    // 2. Category filtering
     if (categories) {
       const catList = Array.isArray(categories) ? categories : categories.split(',').map(c => c.trim());
       if (catList.length > 0) {
@@ -39,7 +33,6 @@ class PostRepository {
       }
     }
 
-    // 3. Date interval filtering
     if (startDate) {
       whereConditions.push(`p.publish_date >= ?`);
       params.push(startDate);
@@ -51,13 +44,11 @@ class PostRepository {
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
-    // 4. Sorting definition
-    let orderByClause = `ORDER BY likes_count DESC, p.publish_date DESC`; // Default: by likes
+    let orderByClause = `ORDER BY likes_count DESC, p.publish_date DESC`;
     if (sort === 'date') {
       orderByClause = `ORDER BY p.publish_date DESC`;
     }
 
-    // Main SQL query
     const sql = `
       SELECT p.id, p.author_id, u.login AS author_login, u.profile_picture AS author_avatar,
              p.title, p.content, p.status, p.publish_date,
@@ -91,7 +82,6 @@ class PostRepository {
       imagesMap[img.post_id].push(img.image_path);
     });
 
-    // Format post categories array and images
     return rows.map(post => ({
       ...post,
       categories: post.category_ids ? post.category_ids.split(',').map((id, idx) => ({
@@ -102,9 +92,6 @@ class PostRepository {
     }));
   }
 
-  /**
-   * Get single post by ID with full author, category, and image info
-   */
   async findById(id) {
     const sql = `
       SELECT p.id, p.author_id, u.login AS author_login, u.profile_picture AS author_avatar,
@@ -140,9 +127,6 @@ class PostRepository {
     };
   }
 
-  /**
-   * Create new post
-   */
   async create({ author_id, title, content, categories = [], images = [] }) {
     const connection = await pool.getConnection();
     try {
@@ -182,9 +166,6 @@ class PostRepository {
     }
   }
 
-  /**
-   * Update post (title, content, categories)
-   */
   async update(id, { title, content, categories }) {
     const connection = await pool.getConnection();
     try {
@@ -230,9 +211,6 @@ class PostRepository {
     }
   }
 
-  /**
-   * Update post status (active / inactive - Admin lock function)
-   */
   async updateStatus(id, status) {
     const [result] = await pool.query(
       `UPDATE posts SET status = ? WHERE id = ?;`,
@@ -241,9 +219,6 @@ class PostRepository {
     return result.affectedRows > 0;
   }
 
-  /**
-   * Delete post
-   */
   async delete(id) {
     const [result] = await pool.query(
       `DELETE FROM posts WHERE id = ?;`,

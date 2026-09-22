@@ -32,11 +32,9 @@ async function initDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // Ensure role ENUM in users table is updated if table already existed
     try {
       await connection.query(`ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'user', 'guest') NOT NULL DEFAULT 'user';`);
     } catch (e) {
-      // Ignore if table does not exist yet or alter fails safely
     }
 
     // 3. Create Posts Table
@@ -61,7 +59,7 @@ async function initDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // 5. Create Post_Categories Table (Many-to-Many)
+    // 5. Create Post_Categories Table
     await connection.query(`
       CREATE TABLE IF NOT EXISTS post_categories (
         post_id INT NOT NULL,

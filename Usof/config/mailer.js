@@ -3,7 +3,6 @@ require('dotenv').config();
 
 class MailerService {
   constructor() {
-    // Simulated Nodemailer transport (json/log transport or ethereal)
     this.transporter = nodemailer.createTransport({
       jsonTransport: true
     });

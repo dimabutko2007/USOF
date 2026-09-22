@@ -3,9 +3,6 @@ const postRepository = require('../repositories/postRepository');
 const { ApiError } = require('../middlewares/errorMiddleware');
 
 class SubscriptionService {
-  /**
-   * Subscribe user to a post
-   */
   async subscribeToPost(userId, postId) {
     const post = await postRepository.findById(postId);
     if (!post) {
@@ -19,9 +16,6 @@ class SubscriptionService {
     return { message: 'Successfully subscribed to post updates.' };
   }
 
-  /**
-   * Unsubscribe user from a post
-   */
   async unsubscribeFromPost(userId, postId) {
     const post = await postRepository.findById(postId);
     if (!post) {

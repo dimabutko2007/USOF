@@ -11,7 +11,6 @@ async function testApi() {
   try {
     let sessionCookie = '';
 
-    // Helper function to execute HTTP requests with session cookie tracking
     async function request(path, options = {}) {
       return new Promise((resolve, reject) => {
         const url = new URL(`http://localhost:3001${path}`);
@@ -170,7 +169,7 @@ async function testApi() {
     console.log('CREATIVE FEATURES');
     console.log('-------------------------------------------------------');
 
-    // 2.1 Favorites (Избранное)
+    // 2.1 Favorites
     console.log('\n[Creative 2.1] POST /api/posts/1/favorite (Add Post 1 to favorites)');
     const addFavRes = await request('/api/posts/1/favorite', { method: 'POST' });
     console.log('   Status:', addFavRes.status, '| Message:', addFavRes.data.message);
@@ -183,9 +182,9 @@ async function testApi() {
     const delFavRes = await request('/api/posts/1/favorite', { method: 'DELETE' });
     console.log('   Status:', delFavRes.status, '| Message:', delFavRes.data.message);
 
-    // 2.2 Guest Role ("Гість") Access Control
+    // 2.2 Guest Role Access Control
     console.log('\n[Creative 2.4] Guest Access Test (Unauthenticated Visitor)');
-    sessionCookie = ''; // Reset session cookie to simulate Guest visitor
+    sessionCookie = '';
 
     console.log('   a) Guest GET /api/posts...');
     const guestPosts = await request('/api/posts');
@@ -211,7 +210,7 @@ async function testApi() {
     const guestWriteFail = await request('/api/posts', { method: 'POST', body: { title: 'Guest Title', content: 'Fail' } });
     console.log('      Status:', guestWriteFail.status, '| Error message:', guestWriteFail.data.message);
 
-    // 2.3 Notifications & Subscriptions System (Сповіщення та підписки)
+    // 2.3 Notifications & Subscriptions System
     console.log('\n[Creative 2.5] Notifications & Subscriptions Flow');
 
     console.log('   a) Login as janesmith...');

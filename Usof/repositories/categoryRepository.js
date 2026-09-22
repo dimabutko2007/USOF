@@ -30,9 +30,8 @@ class CategoryRepository {
 
     if (currentUser) {
       if (currentUser.role === 'admin') {
-        statusCondition = `1=1`; // Admin sees all posts
+        statusCondition = `1=1`;
       } else {
-        // User sees active posts + their own inactive posts
         statusCondition = `(p.status = 'active' OR p.author_id = ?)`;
         params.unshift(currentUser.id);
       }

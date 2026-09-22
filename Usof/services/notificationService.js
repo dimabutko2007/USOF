@@ -3,16 +3,10 @@ const subscriptionRepository = require('../repositories/subscriptionRepository')
 const { ApiError } = require('../middlewares/errorMiddleware');
 
 class NotificationService {
-  /**
-   * Fetch all notifications for a specific user
-   */
   async getUserNotifications(userId) {
     return await notificationRepository.findByUserId(userId);
   }
 
-  /**
-   * Mark a notification as read
-   */
   async markAsRead(notificationId, userId) {
     const notification = await notificationRepository.findById(notificationId);
     if (!notification) {
@@ -27,9 +21,6 @@ class NotificationService {
     return { message: 'Notification marked as read.' };
   }
 
-  /**
-   * Trigger notifications to all subscribers of a post (excluding actor)
-   */
   async notifyPostSubscribers(postId, message, excludeUserId = null) {
     const subscribers = await subscriptionRepository.findSubscribersByPostId(postId);
     const targetUserIds = subscribers.filter(userId => userId !== excludeUserId);
