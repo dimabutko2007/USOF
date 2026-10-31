@@ -1,9 +1,11 @@
 const userService = require('../services/userService');
+const { ApiError } = require('../middlewares/errorMiddleware');
 
 class UserController {
   async getAllUsers(req, res, next) {
     try {
-      const users = await userService.getAllUsers();
+      const currentUser = req.session ? req.session.user : null;
+      const users = await userService.getAllUsers(currentUser);
       res.status(200).json({ status: 'success', users });
     } catch (error) {
       next(error);
@@ -13,7 +15,8 @@ class UserController {
   async getUserById(req, res, next) {
     try {
       const { user_id } = req.params;
-      const user = await userService.getUserById(user_id);
+      const currentUser = req.session ? req.session.user : null;
+      const user = await userService.getUserById(user_id, currentUser);
       res.status(200).json({ status: 'success', user });
     } catch (error) {
       next(error);
@@ -38,10 +41,17 @@ class UserController {
 
   async uploadAvatar(req, res, next) {
     try {
-      const userId = req.session.user.id;
-      const result = await userService.updateAvatar(userId, req.file);
+      const targetUserId = req.params.user_id ? parseInt(req.params.user_id, 10) : req.session.user.id;
 
-      req.session.user.profile_picture = result.profile_picture;
+      if (req.session.user.id !== targetUserId && req.session.user.role !== 'admin') {
+        throw ApiError.forbidden('You are not authorized to update this user avatar.');
+      }
+
+      const result = await userService.updateAvatar(targetUserId, req.file);
+
+      if (req.session.user.id === targetUserId) {
+        req.session.user.profile_picture = result.profile_picture;
+      }
 
       res.status(200).json({ status: 'success', ...result });
     } catch (error) {

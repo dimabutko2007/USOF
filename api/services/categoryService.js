@@ -58,7 +58,27 @@ class CategoryService {
     if (!category) {
       throw ApiError.notFound('Category not found.');
     }
-    await categoryRepository.delete(id);
+
+    const titleNorm = category.title.trim().toLowerCase();
+    if (titleNorm === 'general discussion' || titleNorm === 'general discussions') {
+      throw ApiError.badRequest('The General Discussion category cannot be deleted.');
+    }
+
+    // Find or create General Discussions category as fallback
+    let generalCat = await categoryRepository.findByTitle('General Discussions');
+    if (!generalCat) {
+      generalCat = await categoryRepository.findByTitle('General Discussion');
+    }
+    if (!generalCat) {
+      const newId = await categoryRepository.create({
+        title: 'General Discussions',
+        description: 'General tech questions, career advice, and project reviews.'
+      });
+      generalCat = await categoryRepository.findById(newId);
+    }
+
+    // Reassign all posts from this category to General Discussions (if not already assigned) and delete
+    await categoryRepository.reassignPostsToGeneralAndDelete(id, generalCat.id);
     return { message: 'Category deleted successfully.' };
   }
 }

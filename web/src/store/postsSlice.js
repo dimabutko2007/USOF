@@ -78,7 +78,7 @@ const postsSlice = createSlice({
     },
     filters: {
       search: '',
-      sort: 'likes',
+      sort: 'date_desc',
       categories: [],
       status: '',
       startDate: '',
@@ -105,7 +105,7 @@ const postsSlice = createSlice({
     resetFilters: (state) => {
       state.filters = {
         search: '',
-        sort: 'likes',
+        sort: 'date_desc',
         categories: [],
         status: '',
         startDate: '',

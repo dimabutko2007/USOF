@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { categoriesApi } from '../api/extraApis';
 import { setFilter } from '../store/postsSlice';
-import { Tag, Plus, Hash, Layers } from 'lucide-react';
+import { Tag, Plus, Hash, Layers, Trash2 } from 'lucide-react';
 
 const CategoriesPage = () => {
   const dispatch = useDispatch();
@@ -49,6 +49,28 @@ const CategoriesPage = () => {
       loadCategories();
     } catch (err) {
       alert(err.message);
+    }
+  };
+
+  const isGeneralCategory = (title) => {
+    if (!title) return false;
+    const t = title.trim().toLowerCase();
+    return t === 'general discussion' || t === 'general discussions';
+  };
+
+  const handleDeleteCategory = async (e, cat) => {
+    e.stopPropagation();
+    if (
+      window.confirm(
+        `Are you sure you want to delete category "${cat.title}"? Any questions using this category will automatically be moved to General Discussion.`
+      )
+    ) {
+      try {
+        await categoriesApi.deleteCategory(cat.id);
+        loadCategories();
+      } catch (err) {
+        alert(err.message || 'Failed to delete category.');
+      }
     }
   };
 
@@ -139,9 +161,21 @@ const CategoriesPage = () => {
               onClick={() => handleSelectCategory(cat.id)}
             >
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                  <Hash size={18} color="var(--accent-primary)" />
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>{cat.title}</h3>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Hash size={18} color="var(--accent-primary)" />
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>{cat.title}</h3>
+                  </div>
+                  {role === 'admin' && !isGeneralCategory(cat.title) && (
+                    <button
+                      className="btn-icon btn-sm"
+                      style={{ color: 'var(--color-danger)', padding: '0.3rem' }}
+                      title={`Delete category "${cat.title}"`}
+                      onClick={(e) => handleDeleteCategory(e, cat)}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
                 <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
                   {cat.description || 'General discussions and technical inquiries.'}

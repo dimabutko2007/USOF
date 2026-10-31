@@ -76,7 +76,14 @@ app.use(
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'success', message: 'USOF API Server is running smoothly.' });
+  res.status(200).json({
+    status: 'success',
+    message: 'USOF API Server is running smoothly.',
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+    service: 'USOF Core REST API',
+    version: '1.0.0'
+  });
 });
 
 // API Module Routes

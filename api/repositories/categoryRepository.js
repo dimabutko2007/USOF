@@ -122,6 +122,41 @@ class CategoryRepository {
     );
     return result.affectedRows > 0;
   }
+
+  async reassignPostsToGeneralAndDelete(oldCatId, generalCatId) {
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      // Find all posts that currently have oldCatId
+      const [postsWithOldCat] = await connection.query(
+        `SELECT post_id FROM post_categories WHERE category_id = ?;`,
+        [oldCatId]
+      );
+
+      for (const row of postsWithOldCat) {
+        // Assign general category if post does not already have it
+        await connection.query(
+          `INSERT IGNORE INTO post_categories (post_id, category_id) VALUES (?, ?);`,
+          [row.post_id, generalCatId]
+        );
+      }
+
+      // Delete old category (foreign key CASCADE removes post_categories references)
+      await connection.query(
+        `DELETE FROM categories WHERE id = ?;`,
+        [oldCatId]
+      );
+
+      await connection.commit();
+      return true;
+    } catch (err) {
+      await connection.rollback();
+      throw err;
+    } finally {
+      connection.release();
+    }
+  }
 }
 
 module.exports = new CategoryRepository();

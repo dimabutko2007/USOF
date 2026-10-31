@@ -1,4 +1,5 @@
 const authService = require('../services/authService');
+const userRepository = require('../repositories/userRepository');
 
 class AuthController {
   async register(req, res, next) {
@@ -63,11 +64,22 @@ class AuthController {
     }
   }
 
-  getCurrentUser(req, res) {
-    if (req.session && req.session.user) {
-      return res.status(200).json({ status: 'success', user: req.session.user });
+  async getCurrentUser(req, res, next) {
+    try {
+      if (req.session && req.session.user) {
+        const freshUser = await userRepository.findById(req.session.user.id);
+        if (freshUser) {
+          req.session.user = {
+            ...req.session.user,
+            ...freshUser,
+          };
+          return res.status(200).json({ status: 'success', user: req.session.user });
+        }
+      }
+      return res.status(200).json({ status: 'success', user: null });
+    } catch (error) {
+      next(error);
     }
-    return res.status(200).json({ status: 'success', user: null });
   }
 
   async requestPasswordReset(req, res, next) {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { updateAvatar, checkAuth } from '../store/authSlice';
+import { updateAvatar, checkAuth, setUser } from '../store/authSlice';
 import { userApi } from '../api/extraApis';
 import { postsApi } from '../api/postsApi';
 import PostCard from '../components/posts/PostCard';
@@ -15,14 +16,30 @@ import {
   Check,
   AlertCircle,
   FileText,
+  Calendar,
+  LogIn,
 } from 'lucide-react';
 
 const ProfilePage = () => {
   const dispatch = useDispatch();
-  const { user, role } = useSelector((state) => state.auth);
+  const { user: currentUser, role: currentRole, isAuthenticated } = useSelector((state) => state.auth);
+  const { id: paramId } = useParams();
 
-  const [fullName, setFullName] = useState(user?.full_name || '');
-  const [email, setEmail] = useState(user?.email || '');
+  // Determine if viewing own profile or another user
+  const targetUserId = paramId ? parseInt(paramId, 10) : currentUser?.id;
+  const isOwner = currentUser && targetUserId === currentUser.id;
+  const isAdmin = currentRole === 'admin';
+  const canEdit = isOwner || isAdmin;
+
+  // Profile data states
+  const [profileUser, setProfileUser] = useState(isOwner ? currentUser : null);
+  const [loadingUser, setLoadingUser] = useState(!isOwner);
+  const [userError, setUserError] = useState(null);
+
+  // Edit fields
+  const [login, setLogin] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
   const [isEditingInfo, setIsEditingInfo] = useState(false);
   const [updatingInfo, setUpdatingInfo] = useState(false);
   const [infoMessage, setInfoMessage] = useState(null);
@@ -31,41 +48,104 @@ const ProfilePage = () => {
   // Avatar upload
   const [avatarLoading, setAvatarLoading] = useState(false);
 
-  // User's own posts
-  const [myPosts, setMyPosts] = useState([]);
+  // User's publications
+  const [userPosts, setUserPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(true);
 
+  // Load user data
   useEffect(() => {
-    if (user) {
-      setFullName(user.full_name || '');
-      setEmail(user.email || '');
+    if (!isAuthenticated || !targetUserId) return;
 
-      // Fetch user's own posts (all statuses)
-      postsApi
-        .getPosts({ page: 1, limit: 50 })
-        .then((res) => {
-          const allPosts = res.posts || [];
-          const filtered = allPosts.filter((p) => p.author_id === user.id);
-          setMyPosts(filtered);
-        })
-        .catch(() => {})
-        .finally(() => setPostsLoading(false));
-    }
-  }, [user]);
+    setLoadingUser(true);
+    setUserError(null);
+    userApi
+      .getUserById(targetUserId)
+      .then((res) => {
+        const u = res.user;
+        setProfileUser(u);
+        setLogin(u.login || '');
+        setFullName(u.full_name || '');
+        setEmail(u.email || '');
+        if (isOwner) {
+          dispatch(setUser(u));
+        }
+      })
+      .catch((err) => {
+        setUserError(err.message || 'User not found.');
+      })
+      .finally(() => setLoadingUser(false));
+  }, [isAuthenticated, targetUserId, isOwner, dispatch]);
 
-  if (!user) {
+  // Load user's posts
+  useEffect(() => {
+    if (!isAuthenticated || !targetUserId) return;
+
+    setPostsLoading(true);
+    postsApi
+      .getPosts({ author_id: targetUserId, limit: 50 })
+      .then((res) => {
+        const posts = res.posts || [];
+        setUserPosts(posts);
+      })
+      .catch(() => {
+        setUserPosts([]);
+      })
+      .finally(() => setPostsLoading(false));
+  }, [isAuthenticated, targetUserId]);
+
+  // 1. Guest protection: Guests cannot view user profiles
+  if (!isAuthenticated) {
     return (
-      <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-        Please log in to view your profile.
+      <div className="card fade-in" style={{ textAlign: 'center', padding: '3.5rem 1.5rem' }}>
+        <div
+          style={{
+            display: 'inline-flex',
+            padding: '1rem',
+            borderRadius: '50%',
+            background: 'var(--accent-light)',
+            color: 'var(--accent-primary)',
+            marginBottom: '1rem',
+          }}
+        >
+          <LogIn size={32} />
+        </div>
+        <h2 style={{ fontSize: '1.35rem', fontWeight: 700, marginBottom: '0.5rem' }}>
+          Authentication Required
+        </h2>
+        <p style={{ color: 'var(--text-secondary)', maxWidth: '420px', margin: '0 auto 1.5rem' }}>
+          User profiles and activity statistics are only accessible to registered community members.
+        </p>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
+          <Link to="/login" className="btn btn-primary">
+            Sign In
+          </Link>
+          <Link to="/register" className="btn btn-outline">
+            Create Account
+          </Link>
+        </div>
       </div>
     );
   }
 
-  const avatarSrc = user.profile_picture
-    ? user.profile_picture.startsWith('/uploads')
-      ? user.profile_picture
-      : `/uploads/${user.profile_picture}`
-    : '/uploads/default-avatar.png';
+  if (loadingUser) {
+    return (
+      <div className="card" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+        Loading user profile...
+      </div>
+    );
+  }
+
+  if (userError || !profileUser) {
+    return (
+      <div className="card" style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-danger)' }}>
+        <AlertCircle size={28} style={{ margin: '0 auto 0.75rem', display: 'block' }} />
+        <h3>{userError || 'User not found.'}</h3>
+        <Link to="/" className="btn btn-secondary btn-sm" style={{ marginTop: '1rem', display: 'inline-block' }}>
+          Back to Discussions
+        </Link>
+      </div>
+    );
+  }
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
@@ -76,10 +156,14 @@ const ProfilePage = () => {
 
     setAvatarLoading(true);
     try {
-      await dispatch(updateAvatar(formData)).unwrap();
-      dispatch(checkAuth());
+      const res = await userApi.uploadAvatar(formData, targetUserId);
+      const newPic = res.profile_picture;
+      setProfileUser((prev) => (prev ? { ...prev, profile_picture: newPic } : prev));
+      if (isOwner) {
+        dispatch(checkAuth());
+      }
     } catch (err) {
-      alert(err || 'Failed to update avatar.');
+      alert(err.message || err || 'Failed to update avatar.');
     } finally {
       setAvatarLoading(false);
     }
@@ -87,16 +171,36 @@ const ProfilePage = () => {
 
   const handleSaveInfo = async (e) => {
     e.preventDefault();
+    if (!login.trim()) {
+      setInfoError('Username (login) cannot be empty.');
+      return;
+    }
     setUpdatingInfo(true);
     setInfoMessage(null);
     setInfoError(null);
     try {
-      await userApi.updateUser(user.id, { full_name: fullName, email });
+      const payload = {
+        login: login.trim(),
+        full_name: fullName.trim(),
+      };
+      // Only owner can update email; admins cannot change other users' email
+      if (isOwner && email && email.trim()) {
+        payload.email = email.trim();
+      }
+
+      const res = await userApi.updateUser(targetUserId, payload);
       setInfoMessage('Profile details updated successfully!');
       setIsEditingInfo(false);
-      dispatch(checkAuth());
+
+      if (res?.user) {
+        setProfileUser(res.user);
+        if (isOwner) {
+          dispatch(setUser(res.user));
+          dispatch(checkAuth());
+        }
+      }
     } catch (err) {
-      setInfoError(err.message);
+      setInfoError(err.message || 'Failed to update profile.');
     } finally {
       setUpdatingInfo(false);
     }
@@ -107,78 +211,124 @@ const ProfilePage = () => {
       {/* Profile Overview Card */}
       <div className="card fade-in" style={{ padding: '1.75rem', marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-          {/* Avatar with Upload Badge */}
+          {/* Avatar (with upload icon if owner) */}
           <div style={{ position: 'relative' }}>
             <Avatar
-              src={user.profile_picture}
-              name={user.login || user.full_name || 'User'}
+              src={profileUser.profile_picture}
+              name={profileUser.login || profileUser.full_name || 'User'}
               size={90}
               style={{
                 border: '3px solid var(--accent-primary)',
               }}
             />
-            <button
-              className="btn btn-primary"
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                right: 0,
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                padding: 0,
-              }}
-              title="Upload new avatar"
-              onClick={() => document.getElementById('avatar-file-input').click()}
-              disabled={avatarLoading}
-            >
-              <Camera size={16} />
-            </button>
-            <input
-              id="avatar-file-input"
-              type="file"
-              accept="image/*"
-              style={{ display: 'none' }}
-              onChange={handleAvatarChange}
-            />
+            {canEdit && (
+              <>
+                <button
+                  className="btn btn-primary"
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    right: 0,
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    padding: 0,
+                  }}
+                  title={isOwner ? "Upload new avatar" : "Upload avatar for user (Admin)"}
+                  onClick={() => document.getElementById('avatar-file-input').click()}
+                  disabled={avatarLoading}
+                >
+                  <Camera size={16} />
+                </button>
+                <input
+                  id="avatar-file-input"
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleAvatarChange}
+                />
+              </>
+            )}
           </div>
 
           {/* User Meta Information */}
           <div style={{ flex: 1, minWidth: '220px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.35rem' }}>
-              <h1 style={{ fontSize: '1.45rem', fontWeight: 700 }}>{user.full_name || user.login}</h1>
-              <span className={`badge badge-${role.toLowerCase()}`}>{role.toUpperCase()}</span>
+              <h1 style={{ fontSize: '1.45rem', fontWeight: 700 }}>
+                {profileUser.full_name || profileUser.login}
+              </h1>
+              <span className={`badge badge-${(profileUser.role || 'user').toLowerCase()}`}>
+                {(profileUser.role || 'USER').toUpperCase()}
+              </span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1.25rem',
+                flexWrap: 'wrap',
+                fontSize: '0.88rem',
+                color: 'var(--text-secondary)',
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                 <User size={15} color="var(--text-muted)" />
-                <span>@{user.login}</span>
+                <span>@{profileUser.login}</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                <Mail size={15} color="var(--text-muted)" />
-                <span>{user.email}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--color-warning)', fontWeight: 600 }}>
+
+              {/* Email is ONLY shown for the profile owner or for admin */}
+              {(isOwner || isAdmin) && profileUser.email && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Mail size={15} color="var(--text-muted)" />
+                  <span>{profileUser.email}</span>
+                </div>
+              )}
+
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  color: 'var(--color-warning)',
+                  fontWeight: 600,
+                }}
+              >
                 <Star size={15} fill="currentColor" />
-                <span>Rating: {user.rating || 0}</span>
+                <span>Rating: {profileUser.rating || 0}</span>
               </div>
+
+              {profileUser.created_at && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Calendar size={15} color="var(--text-muted)" />
+                  <span>Joined {new Date(profileUser.created_at).toLocaleDateString()}</span>
+                </div>
+              )}
             </div>
           </div>
 
-          <div>
-            <button
-              className="btn btn-outline btn-sm"
-              onClick={() => setIsEditingInfo(!isEditingInfo)}
-            >
-              <Edit2 size={15} />
-              <span>{isEditingInfo ? 'Cancel Edit' : 'Edit Profile'}</span>
-            </button>
-          </div>
+          {/* Edit Button: available to owner or admin */}
+          {canEdit && (
+            <div>
+              <button
+                className="btn btn-outline btn-sm"
+                onClick={() => setIsEditingInfo(!isEditingInfo)}
+              >
+                <Edit2 size={15} />
+                <span>
+                  {isEditingInfo
+                    ? 'Cancel Edit'
+                    : isOwner
+                    ? 'Edit Profile'
+                    : 'Edit User (Admin)'}
+                </span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Edit Form */}
-        {isEditingInfo && (
+        {isEditingInfo && canEdit && (
           <form
             onSubmit={handleSaveInfo}
             style={{
@@ -224,7 +374,24 @@ const ProfilePage = () => {
               </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '1rem',
+                marginBottom: '1rem',
+              }}
+            >
+              <div className="form-group">
+                <label className="form-label">Username (Login)</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={login}
+                  onChange={(e) => setLogin(e.target.value)}
+                  required
+                />
+              </div>
               <div className="form-group">
                 <label className="form-label">Full Name</label>
                 <input
@@ -234,15 +401,18 @@ const ProfilePage = () => {
                   onChange={(e) => setFullName(e.target.value)}
                 />
               </div>
-              <div className="form-group">
-                <label className="form-label">Email Address</label>
-                <input
-                  type="email"
-                  className="form-input"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
+              {isOwner && (
+                <div className="form-group">
+                  <label className="form-label">Email Address</label>
+                  <input
+                    type="email"
+                    className="form-input"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
             </div>
 
             <button type="submit" className="btn btn-primary btn-sm" disabled={updatingInfo}>
@@ -257,20 +427,22 @@ const ProfilePage = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
           <FileText size={20} color="var(--accent-primary)" />
           <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>
-            My Questions & Posts ({myPosts.length})
+            {isOwner ? 'My Questions & Posts' : `Questions by @${profileUser.login}`} ({userPosts.length})
           </h2>
         </div>
 
         {postsLoading ? (
           <div className="card" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-            Loading your publications...
+            Loading publications...
           </div>
-        ) : myPosts.length === 0 ? (
+        ) : userPosts.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
-            You haven't posted any questions yet. Use the "Ask Question" button to start!
+            {isOwner
+              ? "You haven't posted any questions yet. Use the \"Ask Question\" button to start!"
+              : `@${profileUser.login} hasn't published any questions yet.`}
           </div>
         ) : (
-          myPosts.map((post) => <PostCard key={post.id} post={post} />)
+          userPosts.map((post) => <PostCard key={post.id} post={post} />)
         )}
       </section>
     </div>
@@ -278,4 +450,3 @@ const ProfilePage = () => {
 };
 
 export default ProfilePage;
-

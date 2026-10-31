@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux';
 import { postsApi } from '../../api/postsApi';
 import { categoriesApi } from '../../api/extraApis';
 import { fetchPosts } from '../../store/postsSlice';
-import { X, Upload, Check, AlertCircle } from 'lucide-react';
+import { X, Upload, Check, AlertCircle, EyeOff } from 'lucide-react';
 
 const CreatePostModal = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
@@ -64,8 +64,8 @@ const CreatePostModal = ({ isOpen, onClose }) => {
     setFiles(Array.from(e.target.files));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e, statusChoice = 'active') => {
+    if (e && e.preventDefault) e.preventDefault();
     if (!validate()) return;
 
     setLoading(true);
@@ -74,6 +74,7 @@ const CreatePostModal = ({ isOpen, onClose }) => {
       formData.append('title', title.trim());
       formData.append('content', content.trim());
       formData.append('categories', JSON.stringify(selectedCategories));
+      formData.append('status', statusChoice);
 
       for (let i = 0; i < files.length; i++) {
         formData.append('images', files[i]);
@@ -237,11 +238,27 @@ const CreatePostModal = ({ isOpen, onClose }) => {
           </div>
 
           {/* Actions */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
             <button type="button" className="btn btn-secondary" onClick={onClose} disabled={loading}>
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary" disabled={loading}>
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={(e) => handleSubmit(e, 'inactive')}
+              disabled={loading}
+              title="Save as hidden draft (visible only to you)"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              <EyeOff size={15} />
+              <span>Save as Draft</span>
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={(e) => handleSubmit(e, 'active')}
+              disabled={loading}
+            >
               {loading ? 'Publishing...' : 'Publish Question'}
             </button>
           </div>

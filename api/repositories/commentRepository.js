@@ -1,9 +1,10 @@
 const { pool } = require('../config/db');
 
 class CommentRepository {
-  async findCommentsByPostId(postId, filters = {}) {
+  async findCommentsByPostId(postId, filters = {}, currentUser = null) {
+    const currentUserId = currentUser ? currentUser.id : null;
     let statusCondition = '';
-    const params = [postId];
+    const params = [currentUserId, postId];
 
     if (filters && filters.status && ['active', 'inactive'].includes(filters.status)) {
       statusCondition = `AND c.status = ?`;
@@ -22,10 +23,10 @@ class CommentRepository {
     const [rows] = await pool.query(
       `SELECT c.id, c.parent_id, c.author_id, u.login AS author_login, u.profile_picture AS author_avatar,
               c.post_id, c.content, c.status, c.publish_date,
-              COALESCE(SUM(CASE WHEN l.type = 'like' THEN 1 WHEN l.type = 'dislike' THEN -1 ELSE 0 END), 0) AS likes_count
+              (SELECT COALESCE(SUM(CASE WHEN l.type = 'like' THEN 1 WHEN l.type = 'dislike' THEN -1 ELSE 0 END), 0) FROM likes l WHERE l.target_type = 'comment' AND l.target_id = c.id) AS likes_count,
+              (SELECT l2.type FROM likes l2 WHERE l2.target_type = 'comment' AND l2.target_id = c.id AND l2.author_id = ?) AS user_reaction
        FROM comments c
        JOIN users u ON c.author_id = u.id
-       LEFT JOIN likes l ON l.target_type = 'comment' AND l.target_id = c.id
        WHERE c.post_id = ? ${statusCondition}
        GROUP BY c.id
        ${orderBy};`,
@@ -34,17 +35,18 @@ class CommentRepository {
     return rows;
   }
 
-  async findById(id) {
+  async findById(id, currentUser = null) {
+    const currentUserId = currentUser ? currentUser.id : null;
     const [rows] = await pool.query(
       `SELECT c.id, c.parent_id, c.author_id, u.login AS author_login, u.profile_picture AS author_avatar,
               c.post_id, c.content, c.status, c.publish_date,
-              COALESCE(SUM(CASE WHEN l.type = 'like' THEN 1 WHEN l.type = 'dislike' THEN -1 ELSE 0 END), 0) AS likes_count
+              (SELECT COALESCE(SUM(CASE WHEN l.type = 'like' THEN 1 WHEN l.type = 'dislike' THEN -1 ELSE 0 END), 0) FROM likes l WHERE l.target_type = 'comment' AND l.target_id = c.id) AS likes_count,
+              (SELECT l2.type FROM likes l2 WHERE l2.target_type = 'comment' AND l2.target_id = c.id AND l2.author_id = ?) AS user_reaction
        FROM comments c
        JOIN users u ON c.author_id = u.id
-       LEFT JOIN likes l ON l.target_type = 'comment' AND l.target_id = c.id
        WHERE c.id = ?
        GROUP BY c.id;`,
-      [id]
+      [currentUserId, id]
     );
     return rows[0] || null;
   }
@@ -61,6 +63,14 @@ class CommentRepository {
     const [result] = await pool.query(
       `UPDATE comments SET status = ? WHERE id = ?;`,
       [status, id]
+    );
+    return result.affectedRows > 0;
+  }
+
+  async updateContent(id, content) {
+    const [result] = await pool.query(
+      `UPDATE comments SET content = ? WHERE id = ?;`,
+      [content, id]
     );
     return result.affectedRows > 0;
   }

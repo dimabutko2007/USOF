@@ -6,9 +6,10 @@ const { checkRole } = require('../middlewares/roleMiddleware');
 const upload = require('../middlewares/uploadMiddleware');
 
 router.get('/', userController.getAllUsers);
-router.get('/:user_id', userController.getUserById);
+router.get('/:user_id', isAuthenticated, userController.getUserById);
 router.post('/', isAuthenticated, checkRole('admin'), userController.createUser);
 router.patch('/avatar', isAuthenticated, upload.single('avatar'), userController.uploadAvatar);
+router.patch('/:user_id/avatar', isAuthenticated, upload.single('avatar'), userController.uploadAvatar);
 router.patch('/:user_id', isAuthenticated, userController.updateUser);
 router.delete('/:user_id', isAuthenticated, userController.deleteUser);
 

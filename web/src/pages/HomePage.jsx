@@ -4,6 +4,7 @@ import { useOutletContext } from 'react-router-dom';
 import { fetchPosts, setFilter, setPage, setLimit, resetFilters } from '../store/postsSlice';
 import { categoriesApi } from '../api/extraApis';
 import PostCard from '../components/posts/PostCard';
+import Pagination from '../components/common/Pagination';
 import {
   Filter,
   PlusCircle,
@@ -12,7 +13,9 @@ import {
   ChevronLeft,
   ChevronRight,
   TrendingUp,
+  TrendingDown,
   Clock,
+  History,
   Sparkles,
 } from 'lucide-react';
 
@@ -109,7 +112,7 @@ const HomePage = () => {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
           {/* Quick Sort Tabs */}
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap', alignItems: 'center' }}>
             {hasSearch ? (
               <button
                 className="btn btn-sm btn-primary"
@@ -122,18 +125,36 @@ const HomePage = () => {
             ) : (
               <>
                 <button
-                  className={`btn btn-sm ${filters.sort === 'likes' ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => handleSortChange('likes')}
+                  className={`btn btn-sm ${filters.sort === 'date_desc' || filters.sort === 'date' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => handleSortChange('date_desc')}
+                  title="Recently added first (Default)"
                 >
-                  <TrendingUp size={15} />
-                  <span>Highest Rated</span>
+                  <Clock size={14} />
+                  <span>Recently Added</span>
                 </button>
                 <button
-                  className={`btn btn-sm ${filters.sort === 'date' ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => handleSortChange('date')}
+                  className={`btn btn-sm ${filters.sort === 'date_asc' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => handleSortChange('date_asc')}
+                  title="Oldest added first"
                 >
-                  <Clock size={15} />
-                  <span>Recently Added</span>
+                  <History size={14} />
+                  <span>Oldest Added</span>
+                </button>
+                <button
+                  className={`btn btn-sm ${filters.sort === 'likes_desc' || filters.sort === 'likes' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => handleSortChange('likes_desc')}
+                  title="Highest rating first"
+                >
+                  <TrendingUp size={14} />
+                  <span>Highest Rating</span>
+                </button>
+                <button
+                  className={`btn btn-sm ${filters.sort === 'likes_asc' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => handleSortChange('likes_asc')}
+                  title="Lowest rating first"
+                >
+                  <TrendingDown size={14} />
+                  <span>Lowest Rating</span>
                 </button>
               </>
             )}

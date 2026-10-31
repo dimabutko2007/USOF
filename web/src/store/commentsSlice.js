@@ -28,10 +28,27 @@ export const addComment = createAsyncThunk(
 
 export const toggleCommentLike = createAsyncThunk(
   'comments/toggleCommentLike',
-  async ({ commentId, type }, { rejectWithValue }) => {
+  async ({ commentId, type, currentReaction, currentLikesCount }, { rejectWithValue }) => {
     try {
-      await likesApi.addCommentLike(commentId, type);
-      return { commentId, type };
+      if (currentReaction === type) {
+        await likesApi.removeCommentLike(commentId);
+        return { commentId, type: null, previousReaction: currentReaction, currentLikesCount };
+      } else {
+        await likesApi.addCommentLike(commentId, type);
+        return { commentId, type, previousReaction: currentReaction, currentLikesCount };
+      }
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+export const updateComment = createAsyncThunk(
+  'comments/updateComment',
+  async ({ commentId, content }, { rejectWithValue }) => {
+    try {
+      const res = await commentsApi.updateComment(commentId, { content });
+      return res.comment;
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -92,6 +109,30 @@ const commentsSlice = createSlice({
       // addComment
       .addCase(addComment.fulfilled, (state, action) => {
         state.items.push(action.payload);
+      })
+      // toggleCommentLike
+      .addCase(toggleCommentLike.fulfilled, (state, action) => {
+        const { commentId, type: nextReaction, previousReaction } = action.payload;
+        const prevReaction =
+          previousReaction !== undefined
+            ? previousReaction
+            : (action.meta?.arg?.currentReaction || null);
+        const prevScore = prevReaction === 'like' ? 1 : prevReaction === 'dislike' ? -1 : 0;
+        const nextScore = nextReaction === 'like' ? 1 : nextReaction === 'dislike' ? -1 : 0;
+        const diff = nextScore - prevScore;
+
+        const target = state.items.find((c) => c.id === commentId);
+        if (target) {
+          target.user_reaction = nextReaction;
+          target.likes_count = parseInt(target.likes_count || 0, 10) + diff;
+        }
+      })
+      // updateComment
+      .addCase(updateComment.fulfilled, (state, action) => {
+        const idx = state.items.findIndex((c) => c.id === action.payload.id);
+        if (idx !== -1) {
+          state.items[idx] = { ...state.items[idx], ...action.payload };
+        }
       })
       // updateCommentStatus
       .addCase(updateCommentStatus.fulfilled, (state, action) => {

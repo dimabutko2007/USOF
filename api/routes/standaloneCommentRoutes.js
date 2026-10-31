@@ -4,7 +4,7 @@ const commentController = require('../controllers/commentController');
 const { isAuthenticated } = require('../middlewares/authMiddleware');
 
 router.get('/:comment_id', commentController.getCommentById);
-router.patch('/:comment_id', isAuthenticated, commentController.updateCommentStatus);
+router.patch('/:comment_id', isAuthenticated, commentController.updateComment);
 router.delete('/:comment_id', isAuthenticated, commentController.deleteComment);
 
 module.exports = router;

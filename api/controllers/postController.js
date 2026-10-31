@@ -4,8 +4,12 @@ class PostController {
   async getAllPosts(req, res, next) {
     try {
       const currentUser = req.session ? req.session.user : null;
-      const posts = await postService.getAllPosts(req.query, currentUser);
-      res.status(200).json({ status: 'success', posts });
+      const result = await postService.getAllPosts(req.query, currentUser);
+      if (result && result.posts) {
+        res.status(200).json({ status: 'success', posts: result.posts, pagination: result.pagination });
+      } else {
+        res.status(200).json({ status: 'success', posts: result || [] });
+      }
     } catch (error) {
       next(error);
     }
@@ -35,9 +39,9 @@ class PostController {
 
   async createPost(req, res, next) {
     try {
-      const { title, content, categories } = req.body;
+      const { title, content, categories, status } = req.body;
       const files = req.files || [];
-      const newPost = await postService.createPost({ title, content, categories }, req.session.user, files);
+      const newPost = await postService.createPost({ title, content, categories, status }, req.session.user, files);
       res.status(201).json({ status: 'success', post: newPost });
     } catch (error) {
       next(error);
@@ -47,11 +51,13 @@ class PostController {
   async updatePost(req, res, next) {
     try {
       const { post_id } = req.params;
-      const { title, content, categories, status } = req.body;
+      const { title, content, categories, status, existingImages } = req.body;
+      const files = req.files || [];
       const updatedPost = await postService.updatePost(
         post_id,
-        { title, content, categories, status },
-        req.session.user
+        { title, content, categories, status, existingImages },
+        req.session.user,
+        files
       );
       res.status(200).json({ status: 'success', post: updatedPost });
     } catch (error) {

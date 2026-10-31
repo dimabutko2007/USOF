@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Heart, Code2, Activity } from 'lucide-react';
 import '../../styles/layout.css';
 
@@ -23,13 +24,13 @@ const Footer = () => {
         </div>
 
         <div className="footer-links">
-          <a href="/api/health" target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          <Link to="/status" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
             <Activity size={14} color="var(--color-success)" />
             <span>API Status: Healthy</span>
-          </a>
-          <a href="#rules">Guidelines</a>
-          <a href="#privacy">Privacy</a>
-          <a href="https://github.com" target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          </Link>
+          <Link to="/guidelines">Guidelines</Link>
+          <Link to="/privacy">Privacy</Link>
+          <a href="https://github.com/dimabutko2007/USOF" target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
             <Code2 size={14} />
             <span>Source Code</span>
           </a>

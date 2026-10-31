@@ -5,7 +5,8 @@ class CommentController {
     try {
       const { post_id } = req.params;
       const { status, sort } = req.query;
-      const comments = await commentService.getCommentsByPostId(post_id, { status, sort });
+      const currentUser = req.session ? req.session.user : null;
+      const comments = await commentService.getCommentsByPostId(post_id, { status, sort }, currentUser);
       res.status(200).json({ status: 'success', comments });
     } catch (error) {
       next(error);
@@ -15,7 +16,8 @@ class CommentController {
   async getCommentById(req, res, next) {
     try {
       const { comment_id } = req.params;
-      const comment = await commentService.getCommentById(comment_id);
+      const currentUser = req.session ? req.session.user : null;
+      const comment = await commentService.getCommentById(comment_id, currentUser);
       res.status(200).json({ status: 'success', comment });
     } catch (error) {
       next(error);
@@ -33,15 +35,20 @@ class CommentController {
     }
   }
 
-  async updateCommentStatus(req, res, next) {
+  async updateComment(req, res, next) {
     try {
       const { comment_id } = req.params;
-      const { status } = req.body;
-      const updatedComment = await commentService.updateCommentStatus(comment_id, status, req.session.user);
+      const { status, content } = req.body;
+      const currentUser = req.session ? req.session.user : null;
+      const updatedComment = await commentService.updateComment(comment_id, { status, content }, currentUser);
       res.status(200).json({ status: 'success', comment: updatedComment });
     } catch (error) {
       next(error);
     }
+  }
+
+  async updateCommentStatus(req, res, next) {
+    return this.updateComment(req, res, next);
   }
 
   async deleteComment(req, res, next) {

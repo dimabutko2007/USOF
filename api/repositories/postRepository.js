@@ -1,12 +1,17 @@
 const { pool } = require('../config/db');
 
 class PostRepository {
-  async findAll({ page = 1, limit = 10, sort = 'likes', categories, startDate, endDate, status, search }, currentUser = null) {
+  async findAll({ page = 1, limit = 10, sort = 'date_desc', categories, startDate, endDate, status, search, author_id }, currentUser = null) {
     const offset = (page - 1) * limit;
     const whereConditions = [];
     const params = [];
 
     const currentUserId = currentUser ? currentUser.id : null;
+
+    if (author_id) {
+      whereConditions.push(`p.author_id = ?`);
+      params.push(parseInt(author_id, 10));
+    }
 
     if (!currentUser) {
       whereConditions.push(`p.status = 'active'`);
@@ -96,10 +101,15 @@ class PostRepository {
       relevanceSelect = `, (${cases.join(' + ')}) AS relevance`;
       orderByClause = `ORDER BY relevance DESC, likes_count DESC, p.publish_date DESC`;
     } else {
-      if (sort === 'date') {
-        orderByClause = `ORDER BY p.publish_date DESC`;
-      } else {
+      if (sort === 'date_asc' || sort === 'oldest') {
+        orderByClause = `ORDER BY p.publish_date ASC`;
+      } else if (sort === 'likes_asc' || sort === 'lowest_rating') {
+        orderByClause = `ORDER BY likes_count ASC, p.publish_date ASC`;
+      } else if (sort === 'likes' || sort === 'likes_desc' || sort === 'highest_rating') {
         orderByClause = `ORDER BY likes_count DESC, p.publish_date DESC`;
+      } else {
+        // Default: recently added (date_desc / date)
+        orderByClause = `ORDER BY p.publish_date DESC`;
       }
     }
 
@@ -126,7 +136,31 @@ class PostRepository {
     const queryParams = [currentUserId, ...selectParams, ...params, parseInt(limit, 10), parseInt(offset, 10)];
     const [rows] = await pool.query(sql, queryParams);
 
-    if (rows.length === 0) return [];
+    const countSql = `
+      SELECT COUNT(DISTINCT p.id) AS total
+      FROM posts p
+      JOIN users u ON p.author_id = u.id
+      LEFT JOIN post_categories pc ON p.id = pc.post_id
+      LEFT JOIN categories c ON pc.category_id = c.id
+      ${whereClause};
+    `;
+    const [countRows] = await pool.query(countSql, params);
+    const total = countRows[0]?.total || 0;
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+    const pages = Math.ceil(total / limitNum) || 1;
+
+    if (rows.length === 0) {
+      return {
+        posts: [],
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          pages
+        }
+      };
+    }
 
     const postIds = rows.map(r => r.id);
     const [images] = await pool.query(
@@ -139,7 +173,7 @@ class PostRepository {
       imagesMap[img.post_id].push(img.image_path);
     });
 
-    return rows.map(post => ({
+    const posts = rows.map(post => ({
       ...post,
       comments_count: parseInt(post.comments_count || 0, 10),
       categories: post.category_ids ? post.category_ids.split(',').map((id, idx) => ({
@@ -148,6 +182,16 @@ class PostRepository {
       })) : [],
       images: imagesMap[post.id] || []
     }));
+
+    return {
+      posts,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages
+      }
+    };
   }
 
   async findById(id, currentUser = null) {
@@ -189,14 +233,14 @@ class PostRepository {
     };
   }
 
-  async create({ author_id, title, content, categories = [], images = [] }) {
+  async create({ author_id, title, content, categories = [], images = [], status = 'active' }) {
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
 
       const [result] = await connection.query(
-        `INSERT INTO posts (author_id, title, content, status) VALUES (?, ?, ?, 'active');`,
-        [author_id, title, content]
+        `INSERT INTO posts (author_id, title, content, status) VALUES (?, ?, ?, ?);`,
+        [author_id, title, content, status === 'inactive' ? 'inactive' : 'active']
       );
       const postId = result.insertId;
 
@@ -228,7 +272,7 @@ class PostRepository {
     }
   }
 
-  async update(id, { title, content, categories }) {
+  async update(id, { title, content, categories, existingImages, newImages }) {
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
@@ -259,6 +303,26 @@ class PostRepository {
           await connection.query(
             `INSERT INTO post_categories (post_id, category_id) VALUES (?, ?);`,
             [id, catId]
+          );
+        }
+      }
+
+      if (existingImages !== undefined && Array.isArray(existingImages)) {
+        if (existingImages.length === 0) {
+          await connection.query(`DELETE FROM post_images WHERE post_id = ?;`, [id]);
+        } else {
+          await connection.query(
+            `DELETE FROM post_images WHERE post_id = ? AND image_path NOT IN (${existingImages.map(() => '?').join(',')});`,
+            [id, ...existingImages]
+          );
+        }
+      }
+
+      if (newImages && Array.isArray(newImages) && newImages.length > 0) {
+        for (const imgPath of newImages) {
+          await connection.query(
+            `INSERT INTO post_images (post_id, image_path) VALUES (?, ?);`,
+            [id, imgPath]
           );
         }
       }

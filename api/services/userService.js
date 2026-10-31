@@ -4,15 +4,30 @@ const mailerService = require('../config/mailer');
 const { ApiError } = require('../middlewares/errorMiddleware');
 
 class UserService {
-  async getAllUsers() {
-    return await userRepository.findAll();
+  async getAllUsers(currentUser = null) {
+    const users = await userRepository.findAll();
+    const isAdmin = currentUser && currentUser.role === 'admin';
+    if (!isAdmin) {
+      return users.map(u => {
+        const { email, ...rest } = u;
+        return rest;
+      });
+    }
+    return users;
   }
 
-  async getUserById(userId) {
+  async getUserById(userId, currentUser = null) {
     const user = await userRepository.findById(userId);
     if (!user) {
       throw ApiError.notFound('User not found.');
     }
+
+    const isOwner = currentUser && currentUser.id === user.id;
+    const isAdmin = currentUser && currentUser.role === 'admin';
+    if (!isOwner && !isAdmin) {
+      delete user.email;
+    }
+
     return user;
   }
 
@@ -86,16 +101,22 @@ class UserService {
       if (existing) throw ApiError.conflict('Login is already taken.');
     }
 
-    if (email && email !== user.email) {
+    if (email !== undefined && email !== user.email) {
+      if (currentSessionUser.role === 'admin' && currentSessionUser.id !== parseInt(userId, 10)) {
+        throw ApiError.forbidden('Admins cannot change other users’ email addresses.');
+      }
       if (!mailerService.constructor.isValidEmail(email)) throw ApiError.badRequest('Invalid email format.');
       const existing = await userRepository.findByEmail(email);
       if (existing) throw ApiError.conflict('Email is already taken.');
     }
 
+    // Only allow changing email if user is updating their own profile
+    const finalEmail = (currentSessionUser.id === parseInt(userId, 10)) ? email : undefined;
+
     await userRepository.update(userId, {
       login,
       full_name,
-      email,
+      email: finalEmail,
       role: updatedRole
     });
 

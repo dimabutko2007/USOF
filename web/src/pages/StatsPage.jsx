@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { postsApi } from '../api/postsApi';
 import { userApi, categoriesApi } from '../api/extraApis';
 import Avatar from '../components/common/Avatar';
@@ -163,8 +164,13 @@ const StatsPage = () => {
                       >
                         #{idx + 1}
                       </span>
-                      <Avatar src={u.profile_picture} name={u.login} size={28} />
-                      <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{u.login}</span>
+                      <Link
+                        to={`/users/${u.id}`}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: 'inherit' }}
+                      >
+                        <Avatar src={u.profile_picture} name={u.login} size={28} />
+                        <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{u.login}</span>
+                      </Link>
                       <span className={`badge badge-${u.role}`}>{u.role}</span>
                     </div>
 
@@ -208,7 +214,12 @@ const StatsPage = () => {
                       {post.title}
                     </a>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                      <span>By {post.author_login}</span>
+                      <Link
+                        to={`/users/${post.author_id}`}
+                        style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}
+                      >
+                        By {post.author_login}
+                      </Link>
                       <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>
                         {post.likes_count || 0} votes
                       </span>

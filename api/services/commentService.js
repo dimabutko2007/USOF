@@ -4,16 +4,16 @@ const notificationService = require('./notificationService');
 const { ApiError } = require('../middlewares/errorMiddleware');
 
 class CommentService {
-  async getCommentsByPostId(postId, filters = {}) {
+  async getCommentsByPostId(postId, filters = {}, currentUser = null) {
     const post = await postRepository.findById(postId);
     if (!post) {
       throw ApiError.notFound('Post not found.');
     }
-    return await commentRepository.findCommentsByPostId(postId, filters);
+    return await commentRepository.findCommentsByPostId(postId, filters, currentUser);
   }
 
-  async getCommentById(commentId) {
-    const comment = await commentRepository.findById(commentId);
+  async getCommentById(commentId, currentUser = null) {
+    const comment = await commentRepository.findById(commentId, currentUser);
     if (!comment) {
       throw ApiError.notFound('Comment not found.');
     }
@@ -60,22 +60,38 @@ class CommentService {
     return newComment;
   }
 
-  async updateCommentStatus(commentId, status, currentUser) {
-    if (!['active', 'inactive'].includes(status)) {
-      throw ApiError.badRequest("Invalid status. Must be 'active' or 'inactive'.");
-    }
-
+  async updateComment(commentId, { status, content }, currentUser) {
     const comment = await commentRepository.findById(commentId);
     if (!comment) {
       throw ApiError.notFound('Comment not found.');
     }
 
-    if (currentUser.role !== 'admin' && currentUser.id !== comment.author_id) {
-      throw ApiError.forbidden('You are not authorized to change this comment status.');
+    if (content !== undefined) {
+      if (!content || !content.trim()) {
+        throw ApiError.badRequest('Comment content cannot be empty.');
+      }
+      // Rule: Admin cannot edit other users' comments - only the author can edit comment content
+      if (currentUser.id !== comment.author_id) {
+        throw ApiError.forbidden('Only the author can edit the comment content.');
+      }
+      await commentRepository.updateContent(commentId, content.trim());
     }
 
-    await commentRepository.updateStatus(commentId, status);
-    return await commentRepository.findById(commentId);
+    if (status !== undefined) {
+      if (!['active', 'inactive'].includes(status)) {
+        throw ApiError.badRequest("Invalid status. Must be 'active' or 'inactive'.");
+      }
+      if (currentUser.role !== 'admin' && currentUser.id !== comment.author_id) {
+        throw ApiError.forbidden('You are not authorized to change this comment status.');
+      }
+      await commentRepository.updateStatus(commentId, status);
+    }
+
+    return await commentRepository.findById(commentId, currentUser);
+  }
+
+  async updateCommentStatus(commentId, status, currentUser) {
+    return await this.updateComment(commentId, { status }, currentUser);
   }
 
   async deleteComment(commentId, currentUser) {

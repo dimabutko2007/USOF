@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchFavorites } from './store/favoritesSlice';
 import { fetchSubscriptions } from './store/subscriptionsSlice';
@@ -14,21 +14,10 @@ import CategoriesPage from './pages/CategoriesPage';
 import FavoritesPage from './pages/FavoritesPage';
 import SubscriptionsPage from './pages/SubscriptionsPage';
 import StatsPage from './pages/StatsPage';
-import { AlertTriangle, ArrowLeft } from 'lucide-react';
-
-const NotFoundPage = () => (
-  <div className="card" style={{ textAlign: 'center', padding: '4rem 1rem', maxWidth: '500px', margin: '3rem auto' }}>
-    <AlertTriangle size={48} color="var(--color-warning)" style={{ margin: '0 auto 1rem' }} />
-    <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.5rem' }}>404 - Page Not Found</h1>
-    <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-      The page or discussion you are looking for does not exist or has been relocated.
-    </p>
-    <Link to="/" className="btn btn-primary">
-      <ArrowLeft size={16} />
-      <span>Back to Community Feed</span>
-    </Link>
-  </div>
-);
+import GuidelinesPage from './pages/GuidelinesPage';
+import PrivacyPage from './pages/PrivacyPage';
+import StatusPage from './pages/StatusPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 function App() {
   const dispatch = useDispatch();
@@ -50,10 +39,15 @@ function App() {
         <Route path="register" element={<RegisterPage />} />
         <Route path="password-reset" element={<PasswordResetPage />} />
         <Route path="profile" element={<ProfilePage />} />
+        <Route path="users/:id" element={<ProfilePage />} />
         <Route path="categories" element={<CategoriesPage />} />
         <Route path="favorites" element={<FavoritesPage />} />
         <Route path="subscriptions" element={<SubscriptionsPage />} />
         <Route path="stats" element={<StatsPage />} />
+        <Route path="guidelines" element={<GuidelinesPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
+        <Route path="status" element={<StatusPage />} />
+        <Route path="health" element={<StatusPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

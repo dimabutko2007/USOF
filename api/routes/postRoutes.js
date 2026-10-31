@@ -10,8 +10,8 @@ router.get('/', postController.getAllPosts);
 router.get('/:post_id', postController.getPostById);
 router.get('/:post_id/categories', postController.getPostCategories);
 router.post('/', isAuthenticated, uploadPostImages.array('images', 5), postController.createPost);
-router.patch('/:post_id', isAuthenticated, postController.updatePost);
-router.patch('/:post_id/status', isAuthenticated, checkRole('admin'), postController.updateStatus);
+router.patch('/:post_id', isAuthenticated, uploadPostImages.array('images', 5), postController.updatePost);
+router.patch('/:post_id/status', isAuthenticated, postController.updateStatus);
 router.delete('/:post_id', isAuthenticated, postController.deletePost);
 
 router.post('/:post_id/subscribe', isAuthenticated, subscriptionController.subscribe);

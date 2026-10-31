@@ -19,16 +19,19 @@ export const categoriesApi = {
   getCategories: () => api.get('/categories'),
   getCategoryById: (id) => api.get(`/categories/${id}`),
   getCategoryPosts: (id) => api.get(`/categories/${id}/posts`),
+  deleteCategory: (id) => api.delete(`/categories/${id}`),
 };
 
 export const userApi = {
   getUsers: (params = {}) => api.get('/users', { params }),
   getUserById: (id) => api.get(`/users/${id}`),
   updateUser: (id, data) => api.patch(`/users/${id}`, data),
-  uploadAvatar: (formData) =>
-    api.patch('/users/avatar', formData, {
+  uploadAvatar: (formData, userId = null) => {
+    const url = userId ? `/users/${userId}/avatar` : '/users/avatar';
+    return api.patch(url, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
-    }),
+    });
+  },
 };
 
 export const notificationsApi = {

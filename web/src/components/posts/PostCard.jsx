@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { toggleLikePost } from '../../store/postsSlice';
 import { addFavorite, removeFavorite } from '../../store/favoritesSlice';
 import { subscribePost, unsubscribePost } from '../../store/subscriptionsSlice';
+import { postsApi } from '../../api/postsApi';
 import Avatar from '../common/Avatar';
 import {
   ThumbsUp,
@@ -14,13 +15,22 @@ import {
   Calendar,
   Check,
   Bell,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 const PostCard = ({ post }) => {
   const dispatch = useDispatch();
-  const { isAuthenticated } = useSelector((state) => state.auth || {});
+  const { user, role, isAuthenticated } = useSelector((state) => state.auth || {});
   const { favoriteIds = [] } = useSelector((state) => state.favorites || {});
   const { subscribedPostIds = [] } = useSelector((state) => state.subscriptions || {});
+
+  const [status, setStatus] = useState(post.status || 'active');
+  const isAuthorOrAdmin = isAuthenticated && (user?.id === post.author_id || role === 'admin');
+
+  useEffect(() => {
+    setStatus(post.status || 'active');
+  }, [post.status]);
 
   const override = useSelector((state) => state.posts?.likesByPostId?.[post.id]);
 
@@ -125,6 +135,18 @@ const PostCard = ({ post }) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleToggleStatus = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const nextStatus = status === 'active' ? 'inactive' : 'active';
+    try {
+      await postsApi.updatePostStatus(post.id, nextStatus);
+      setStatus(nextStatus);
+    } catch (err) {
+      alert(err.message || 'Failed to update post status.');
+    }
+  };
+
   return (
     <article className="card fade-in" style={{ marginBottom: '1rem', position: 'relative' }}>
       <div style={{ display: 'flex', gap: '1rem' }}>
@@ -188,8 +210,8 @@ const PostCard = ({ post }) => {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-              {post.status === 'inactive' && (
-                <span className="badge badge-inactive">Inactive / Draft</span>
+              {status === 'inactive' && (
+                <span className="badge badge-inactive">Hidden / Draft</span>
               )}
               {categories.map((cat, idx) => (
                 <span key={idx} className="badge badge-primary">
@@ -198,8 +220,21 @@ const PostCard = ({ post }) => {
               ))}
             </div>
 
-            {/* Quick Actions (Subscribe, Bookmark & Share) */}
+            {/* Quick Actions (Status toggle, Subscribe, Bookmark & Share) */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              {isAuthorOrAdmin && (
+                <button
+                  className="btn-icon"
+                  onClick={handleToggleStatus}
+                  title={status === 'active' ? 'Hide question (Draft)' : 'Publish question'}
+                  style={{
+                    color: status === 'inactive' ? 'var(--color-warning)' : 'inherit',
+                  }}
+                >
+                  {status === 'active' ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              )}
+
               <button
                 className="btn-icon"
                 onClick={handleSubscribe}
@@ -274,12 +309,15 @@ const PostCard = ({ post }) => {
               gap: '0.5rem',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Link
+              to={`/users/${post.author_id}`}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: 'inherit' }}
+            >
               <Avatar src={post.author_avatar} name={post.author_login} size={24} />
               <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
                 {post.author_login}
               </span>
-            </div>
+            </Link>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
               <Calendar size={14} />

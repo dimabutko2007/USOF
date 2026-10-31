@@ -7,6 +7,8 @@ export const commentsApi = {
   createComment: (postId, data) => api.post(`/posts/${postId}/comments`, data),
   updateCommentStatus: (commentId, status) =>
     api.patch(`/comments/${commentId}`, { status }),
+  updateComment: (commentId, data) =>
+    api.patch(`/comments/${commentId}`, data),
   deleteComment: (commentId) => api.delete(`/comments/${commentId}`),
 };
 

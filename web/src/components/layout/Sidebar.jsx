@@ -8,8 +8,8 @@ import {
   BarChart2,
   User,
   PlusCircle,
-  HelpCircle,
   Bell,
+  Lightbulb,
 } from 'lucide-react';
 import '../../styles/layout.css';
 
@@ -99,7 +99,7 @@ const Sidebar = ({ onOpenCreateModal }) => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600, color: 'var(--accent-primary)', marginBottom: '0.3rem' }}>
-          <HelpCircle size={16} />
+          <Lightbulb size={16} />
           <span>Pro Tip</span>
         </div>
         Search questions with tags or filter by rating to discover expert solutions.
@@ -109,4 +109,3 @@ const Sidebar = ({ onOpenCreateModal }) => {
 };
 
 export default Sidebar;
-
