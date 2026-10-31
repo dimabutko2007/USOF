@@ -66,7 +66,6 @@ const PostDetailsPage = () => {
   const [copied, setCopied] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
 
-  // Editing state
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
@@ -637,7 +636,7 @@ const PostDetailsPage = () => {
               </div>
 
               {/* Social Sharing & Bookmark Toolbar */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', position: 'relative' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', position: 'relative', flexWrap: 'wrap' }}>
                 <button
                   className="btn btn-outline btn-sm"
                   onClick={handleSubscribe}

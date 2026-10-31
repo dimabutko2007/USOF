@@ -146,7 +146,7 @@ const CategoriesPage = () => {
           Loading categories...
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))', gap: '1rem' }}>
           {categories.map((cat) => (
             <div
               key={cat.id}

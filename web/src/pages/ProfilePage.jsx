@@ -6,6 +6,7 @@ import { userApi } from '../api/extraApis';
 import { postsApi } from '../api/postsApi';
 import PostCard from '../components/posts/PostCard';
 import Avatar from '../components/common/Avatar';
+import Pagination from '../components/common/Pagination';
 import {
   User,
   Mail,
@@ -25,18 +26,15 @@ const ProfilePage = () => {
   const { user: currentUser, role: currentRole, isAuthenticated } = useSelector((state) => state.auth);
   const { id: paramId } = useParams();
 
-  // Determine if viewing own profile or another user
   const targetUserId = paramId ? parseInt(paramId, 10) : currentUser?.id;
   const isOwner = currentUser && targetUserId === currentUser.id;
   const isAdmin = currentRole === 'admin';
   const canEdit = isOwner || isAdmin;
 
-  // Profile data states
   const [profileUser, setProfileUser] = useState(isOwner ? currentUser : null);
   const [loadingUser, setLoadingUser] = useState(!isOwner);
   const [userError, setUserError] = useState(null);
 
-  // Edit fields
   const [login, setLogin] = useState('');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -45,16 +43,16 @@ const ProfilePage = () => {
   const [infoMessage, setInfoMessage] = useState(null);
   const [infoError, setInfoError] = useState(null);
 
-  // Avatar upload
   const [avatarLoading, setAvatarLoading] = useState(false);
 
-  // User's publications
   const [userPosts, setUserPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(true);
+  const [postsPage, setPostsPage] = useState(1);
+  const postsPageSize = 10;
 
-  // Load user data
   useEffect(() => {
     if (!isAuthenticated || !targetUserId) return;
+    setPostsPage(1);
 
     setLoadingUser(true);
     setUserError(null);
@@ -76,7 +74,6 @@ const ProfilePage = () => {
       .finally(() => setLoadingUser(false));
   }, [isAuthenticated, targetUserId, isOwner, dispatch]);
 
-  // Load user's posts
   useEffect(() => {
     if (!isAuthenticated || !targetUserId) return;
 
@@ -93,7 +90,6 @@ const ProfilePage = () => {
       .finally(() => setPostsLoading(false));
   }, [isAuthenticated, targetUserId]);
 
-  // 1. Guest protection: Guests cannot view user profiles
   if (!isAuthenticated) {
     return (
       <div className="card fade-in" style={{ textAlign: 'center', padding: '3.5rem 1.5rem' }}>
@@ -183,7 +179,6 @@ const ProfilePage = () => {
         login: login.trim(),
         full_name: fullName.trim(),
       };
-      // Only owner can update email; admins cannot change other users' email
       if (isOwner && email && email.trim()) {
         payload.email = email.trim();
       }
@@ -442,7 +437,21 @@ const ProfilePage = () => {
               : `@${profileUser.login} hasn't published any questions yet.`}
           </div>
         ) : (
-          userPosts.map((post) => <PostCard key={post.id} post={post} />)
+          <>
+            {userPosts
+              .slice((postsPage - 1) * postsPageSize, postsPage * postsPageSize)
+              .map((post) => (
+                <PostCard key={post.id} post={post} />
+              ))}
+
+            <Pagination
+              currentPage={postsPage}
+              totalPages={Math.ceil(userPosts.length / postsPageSize) || 1}
+              totalItems={userPosts.length}
+              onPageChange={setPostsPage}
+              itemName="posts"
+            />
+          </>
         )}
       </section>
     </div>

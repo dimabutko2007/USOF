@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { checkAuth } from '../../store/authSlice';
 import { fetchNotifications } from '../../store/notificationSlice';
@@ -11,12 +11,18 @@ import CreatePostModal from '../posts/CreatePostModal';
 
 const MainLayout = () => {
   const dispatch = useDispatch();
+  const location = useLocation();
   const { isAuthenticated } = useSelector((state) => state.auth);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   useEffect(() => {
     dispatch(checkAuth());
   }, [dispatch]);
+
+  useEffect(() => {
+    setIsMobileNavOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -29,9 +35,19 @@ const MainLayout = () => {
 
   return (
     <div className="app-container">
-      <Header />
+      <Header
+        isMobileNavOpen={isMobileNavOpen}
+        toggleMobileNav={() => setIsMobileNavOpen((prev) => !prev)}
+      />
       <div className="main-content">
-        <Sidebar onOpenCreateModal={() => setIsCreateOpen(true)} />
+        <Sidebar
+          isOpen={isMobileNavOpen}
+          onClose={() => setIsMobileNavOpen(false)}
+          onOpenCreateModal={() => {
+            setIsMobileNavOpen(false);
+            setIsCreateOpen(true);
+          }}
+        />
         <main className="page-wrapper">
           <Outlet context={{ openCreatePost: () => setIsCreateOpen(true) }} />
         </main>
@@ -47,4 +63,3 @@ const MainLayout = () => {
 };
 
 export default MainLayout;
-

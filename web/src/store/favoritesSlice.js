@@ -2,7 +2,6 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { favoritesApi } from '../api/extraApis';
 import { toggleLikePost } from './postsSlice';
 
-// Fetch user's favorites and store only the set of post IDs
 export const fetchFavorites = createAsyncThunk(
   'favorites/fetchFavorites',
   async (_, { rejectWithValue }) => {
@@ -42,9 +41,7 @@ export const removeFavorite = createAsyncThunk(
 const favoritesSlice = createSlice({
   name: 'favorites',
   initialState: {
-    // Set of favorited post IDs for quick lookup
     favoriteIds: [],
-    // Full favorite post objects (for FavoritesPage)
     items: [],
     loading: false,
     error: null,
@@ -77,7 +74,6 @@ const favoritesSlice = createSlice({
         }
       })
       .addCase(addFavorite.rejected, (state, action) => {
-        // Optimistic update was already done in component, revert will happen on re-fetch
         state.error = action.payload;
       })
       .addCase(removeFavorite.fulfilled, (state, action) => {
@@ -111,4 +107,3 @@ const favoritesSlice = createSlice({
 
 export const { clearFavorites } = favoritesSlice.actions;
 export default favoritesSlice.reducer;
-

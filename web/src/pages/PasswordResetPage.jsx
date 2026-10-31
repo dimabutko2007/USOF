@@ -4,7 +4,7 @@ import { authApi } from '../api/authApi';
 import { KeyRound, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
 
 const PasswordResetPage = () => {
-  const [step, setStep] = useState(1); // 1: Request, 2: Reset
+  const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
   const [token, setToken] = useState('');
   const [password, setPassword] = useState('');
@@ -44,7 +44,7 @@ const PasswordResetPage = () => {
     try {
       const res = await authApi.confirmPasswordReset(token.trim(), password, passwordConfirmation);
       setSuccessMessage(res.message);
-      setStep(3); // Completed
+      setStep(3);
     } catch (err) {
       setError(err.message);
     } finally {

@@ -43,7 +43,6 @@ const HomePage = () => {
       page: pagination.page,
       limit: pagination.limit,
     };
-    // При активном поиске сортировка всегда по релевантности (настраивается на бэкенде)
     if (!hasSearch) params.sort = filters.sort;
     if (filters.search) params.search = filters.search;
     if (filters.categories && filters.categories.length > 0) {
@@ -261,55 +260,13 @@ const HomePage = () => {
       )}
 
       {/* Pagination Bar */}
-      {pagination && pagination.pages > 1 && (
-        <div
-          className="card"
-          style={{
-            marginTop: '1rem',
-            padding: '0.75rem 1.25rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '0.75rem',
-          }}
-        >
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            Showing Page <strong>{pagination.page}</strong> of <strong>{pagination.pages}</strong> ({pagination.total} total posts)
-          </span>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <button
-              className="btn btn-outline btn-sm"
-              disabled={pagination.page <= 1}
-              onClick={() => dispatch(setPage(pagination.page - 1))}
-            >
-              <ChevronLeft size={16} />
-              <span>Prev</span>
-            </button>
-
-            {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                className={`btn btn-sm ${p === pagination.page ? 'btn-primary' : 'btn-outline'}`}
-                style={{ minWidth: '32px', padding: '0.35rem 0.5rem' }}
-                onClick={() => dispatch(setPage(p))}
-              >
-                {p}
-              </button>
-            ))}
-
-            <button
-              className="btn btn-outline btn-sm"
-              disabled={pagination.page >= pagination.pages}
-              onClick={() => dispatch(setPage(pagination.page + 1))}
-            >
-              <span>Next</span>
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        currentPage={pagination?.page || 1}
+        totalPages={pagination?.pages || 1}
+        totalItems={pagination?.total || posts.length}
+        onPageChange={(p) => dispatch(setPage(p))}
+        itemName="posts"
+      />
     </div>
   );
 };

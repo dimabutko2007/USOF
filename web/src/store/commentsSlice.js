@@ -85,7 +85,7 @@ const commentsSlice = createSlice({
     items: [],
     loading: false,
     error: null,
-    sortBy: 'likes_asc', // Default: likes ascending per checklist requirement
+    sortBy: 'likes_asc',
   },
   reducers: {
     setCommentSort: (state, action) => {
@@ -150,4 +150,3 @@ const commentsSlice = createSlice({
 
 export const { setCommentSort } = commentsSlice.actions;
 export default commentsSlice.reducer;
-

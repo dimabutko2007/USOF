@@ -4,6 +4,7 @@ import { fetchSubscriptions } from '../store/subscriptionsSlice';
 import { categoriesApi } from '../api/extraApis';
 import PostCard from '../components/posts/PostCard';
 import PostFilterToolbar from '../components/posts/PostFilterToolbar';
+import Pagination from '../components/common/Pagination';
 import { Bell, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -23,6 +24,8 @@ const SubscriptionsPage = () => {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -84,13 +87,22 @@ const SubscriptionsPage = () => {
         if (scoreA !== scoreB) return scoreA - scoreB;
         return dateA - dateB;
       } else {
-        // 'date_desc' (Default: recently added)
         return dateB - dateA;
       }
     });
 
     return result;
   }, [safeSubscriptions, sort, selectedCategories, startDate, endDate]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sort, selectedCategories, startDate, endDate]);
+
+  const totalPages = Math.ceil(filteredSubscriptions.length / pageSize) || 1;
+  const paginatedSubscriptions = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredSubscriptions.slice(startIndex, startIndex + pageSize);
+  }, [filteredSubscriptions, currentPage, pageSize]);
 
   if (!isAuthenticated) {
     return (
@@ -167,7 +179,19 @@ const SubscriptionsPage = () => {
           </button>
         </div>
       ) : (
-        filteredSubscriptions.map((post) => <PostCard key={post.id} post={post} />)
+        <>
+          {paginatedSubscriptions.map((post) => (
+            <PostCard key={post.id} post={post} />
+          ))}
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredSubscriptions.length}
+            onPageChange={setCurrentPage}
+            itemName="subscriptions"
+          />
+        </>
       )}
     </div>
   );

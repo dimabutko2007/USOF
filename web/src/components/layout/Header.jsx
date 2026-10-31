@@ -15,11 +15,13 @@ import {
   Bell,
   Shield,
   User as UserIcon,
+  Menu,
+  X,
 } from 'lucide-react';
 import '../../styles/layout.css';
 import Avatar from '../common/Avatar';
 
-const Header = () => {
+const Header = ({ isMobileNavOpen = false, toggleMobileNav }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
@@ -44,25 +46,31 @@ const Header = () => {
     navigate('/');
   };
 
-  // Avatar URL resolver: if uploads/ or default-avatar.png
-  const avatarSrc = user?.profile_picture
-    ? user.profile_picture.startsWith('/uploads')
-      ? user.profile_picture
-      : `/uploads/${user.profile_picture}`
-    : '/uploads/default-avatar.png';
-
   return (
     <header className="header">
       <div className="header-container">
-        {/* Logo */}
-        <Link to="/" className="header-logo">
-          <img src="/logo.png" alt="USOF Logo" className="header-logo-img" />
-          <span>USOF</span>
-          <span className="header-logo-badge">DEV</span>
-        </Link>
+        {/* Left Section: Mobile Menu Toggle + Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <button
+            type="button"
+            className="btn btn-icon mobile-menu-btn"
+            onClick={toggleMobileNav}
+            aria-label="Toggle Navigation Menu"
+            title="Toggle Navigation Menu"
+          >
+            {isMobileNavOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
 
-        {/* Search Bar */}
-        <form className="header-search" onSubmit={handleSearchSubmit}>
+          {/* Logo */}
+          <Link to="/" className="header-logo">
+            <img src="/logo.png" alt="USOF Logo" className="header-logo-img" />
+            <span>USOF</span>
+            <span className="header-logo-badge">DEV</span>
+          </Link>
+        </div>
+
+        {/* Desktop Search Bar (Hidden on mobile via CSS) */}
+        <form className="header-search header-search-desktop" onSubmit={handleSearchSubmit}>
           <Search size={18} className="header-search-icon" />
           <input
             type="text"
@@ -71,14 +79,24 @@ const Header = () => {
             value={filters.search}
             onChange={handleSearchChange}
           />
+          {filters.search && (
+            <button
+              type="button"
+              className="header-search-clear"
+              onClick={() => dispatch(setFilter({ search: '' }))}
+              title="Clear search"
+            >
+              <X size={14} />
+            </button>
+          )}
         </form>
 
         {/* Right Actions */}
         <div className="header-actions">
           {/* Role Badge */}
-          <div className={`badge badge-${role.toLowerCase()}`}>
+          <div className={`badge badge-${role.toLowerCase()} header-role-badge`}>
             {role === 'admin' ? <Shield size={12} /> : <UserIcon size={12} />}
-            <span>{role.toUpperCase()}</span>
+            <span className="header-role-text">{role.toUpperCase()}</span>
           </div>
 
           {/* Theme Toggle Button */}
@@ -159,10 +177,10 @@ const Header = () => {
 
           {/* User Profile or Guest Actions */}
           {isAuthenticated ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <Link to="/profile" className="user-profile-badge" title="View Profile">
                 <Avatar src={user?.profile_picture} name={user?.login || 'User'} size={26} />
-                <div className="user-info-text">
+                <div className="user-info-text header-user-text">
                   <span className="user-name">{user?.login}</span>
                 </div>
               </Link>
@@ -172,30 +190,54 @@ const Header = () => {
                 title="Log out from platform"
               >
                 <LogOut size={16} />
-                <span>Logout</span>
+                <span className="header-btn-label">Logout</span>
               </button>
             </div>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div className="user-profile-badge" style={{ cursor: 'default' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <div className="user-profile-badge header-guest-badge" style={{ cursor: 'default' }}>
                 <Avatar isGuest name="Guest" size={26} />
-                <div className="user-info-text">
+                <div className="user-info-text header-user-text">
                   <span className="user-name" style={{ color: 'var(--text-muted)' }}>
                     Guest
                   </span>
                 </div>
               </div>
-              <Link to="/login" className="btn btn-secondary btn-sm">
+              <Link to="/login" className="btn btn-secondary btn-sm" title="Log In">
                 <LogIn size={15} />
-                <span>Log In</span>
+                <span className="header-btn-label">Log In</span>
               </Link>
-              <Link to="/register" className="btn btn-primary btn-sm">
+              <Link to="/register" className="btn btn-primary btn-sm" title="Sign Up">
                 <UserPlus size={15} />
-                <span>Sign Up</span>
+                <span className="header-btn-label">Sign Up</span>
               </Link>
             </div>
           )}
         </div>
+      </div>
+
+      {/* Mobile Search Panel: transferred from top cramped header to its own dedicated panel */}
+      <div className="header-mobile-search-panel">
+        <form className="header-search-form-mobile" onSubmit={handleSearchSubmit}>
+          <Search size={16} className="header-search-icon" />
+          <input
+            type="text"
+            className="header-search-input-mobile"
+            placeholder="Search questions, tags, topics..."
+            value={filters.search}
+            onChange={handleSearchChange}
+          />
+          {filters.search && (
+            <button
+              type="button"
+              className="header-search-clear"
+              onClick={() => dispatch(setFilter({ search: '' }))}
+              title="Clear search"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </form>
       </div>
     </header>
   );

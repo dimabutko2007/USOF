@@ -108,12 +108,10 @@ class PostRepository {
       } else if (sort === 'likes' || sort === 'likes_desc' || sort === 'highest_rating') {
         orderByClause = `ORDER BY likes_count DESC, p.publish_date DESC`;
       } else {
-        // Default: recently added (date_desc / date)
         orderByClause = `ORDER BY p.publish_date DESC`;
       }
     }
 
-    // 🔴 ЗМІНЕНО: l2.author_id замість l2.user_id
     const sql = `
       SELECT p.id, p.author_id, u.login AS author_login, u.profile_picture AS author_avatar,
              p.title, p.content, p.status, p.publish_date,
@@ -196,7 +194,6 @@ class PostRepository {
 
   async findById(id, currentUser = null) {
     const currentUserId = currentUser ? currentUser.id : null;
-    // 🔴 ЗМІНЕНО: l2.author_id замість l2.user_id
     const sql = `
       SELECT p.id, p.author_id, u.login AS author_login, u.profile_picture AS author_avatar,
              p.title, p.content, p.status, p.publish_date,

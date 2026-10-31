@@ -39,7 +39,6 @@ const StatsPage = () => {
         const users = usersData.users || [];
         const categories = catsData.categories || [];
 
-        // Sort users by rating descending for leaderboard
         const sortedUsers = [...users].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 5);
 
         setStats({
@@ -82,7 +81,7 @@ const StatsPage = () => {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* Key Metric Cards Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
             {/* Total Posts */}
             <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <div style={{ padding: '0.85rem', borderRadius: 'var(--radius-md)', background: 'var(--accent-light)', color: 'var(--accent-primary)' }}>
@@ -131,7 +130,7 @@ const StatsPage = () => {
           </div>
 
           {/* Two-Column Grid: Leaderboard & Recent Activity */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '1.25rem' }}>
             {/* Top Contributors Leaderboard */}
             <div className="card">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
@@ -236,4 +235,3 @@ const StatsPage = () => {
 };
 
 export default StatsPage;
-

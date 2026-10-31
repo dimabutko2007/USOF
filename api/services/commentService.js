@@ -70,7 +70,6 @@ class CommentService {
       if (!content || !content.trim()) {
         throw ApiError.badRequest('Comment content cannot be empty.');
       }
-      // Rule: Admin cannot edit other users' comments - only the author can edit comment content
       if (currentUser.id !== comment.author_id) {
         throw ApiError.forbidden('Only the author can edit the comment content.');
       }

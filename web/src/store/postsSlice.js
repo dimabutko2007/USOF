@@ -84,7 +84,7 @@ const postsSlice = createSlice({
       startDate: '',
       endDate: '',
     },
-    likesByPostId: {}, // { [postId]: { reaction: 'like' | 'dislike' | null, likes_count: number } }
+    likesByPostId: {},
     currentPost: null,
     loading: false,
     detailLoading: false,

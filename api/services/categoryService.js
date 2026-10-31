@@ -64,7 +64,6 @@ class CategoryService {
       throw ApiError.badRequest('The General Discussion category cannot be deleted.');
     }
 
-    // Find or create General Discussions category as fallback
     let generalCat = await categoryRepository.findByTitle('General Discussions');
     if (!generalCat) {
       generalCat = await categoryRepository.findByTitle('General Discussion');
@@ -77,7 +76,6 @@ class CategoryService {
       generalCat = await categoryRepository.findById(newId);
     }
 
-    // Reassign all posts from this category to General Discussions (if not already assigned) and delete
     await categoryRepository.reassignPostsToGeneralAndDelete(id, generalCat.id);
     return { message: 'Category deleted successfully.' };
   }

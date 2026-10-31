@@ -41,7 +41,7 @@ export const updateAvatar = createAsyncThunk('auth/updateAvatar', async (formDat
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
-    user: null, // null means Guest
+    user: null,
     role: 'guest',
     isAuthenticated: false,
     loading: true,
@@ -109,4 +109,3 @@ const authSlice = createSlice({
 
 export const { clearAuthError, setUser } = authSlice.actions;
 export default authSlice.reducer;
-

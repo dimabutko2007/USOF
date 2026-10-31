@@ -1,21 +1,19 @@
 import React, { useState } from 'react';
 import { User as UserIcon } from 'lucide-react';
 
-// Developer-oriented modern vibrant palette
 const AVATAR_PALETTE = [
-  '#6366F1', // Indigo
-  '#8B5CF6', // Violet
-  '#EC4899', // Pink
-  '#3B82F6', // Blue
-  '#10B981', // Emerald
-  '#F59E0B', // Amber
-  '#06B6D4', // Cyan
-  '#14B8A6', // Teal
-  '#F97316', // Orange
-  '#A855F7', // Purple
+  '#6366F1',
+  '#8B5CF6',
+  '#EC4899',
+  '#3B82F6',
+  '#10B981',
+  '#F59E0B',
+  '#06B6D4',
+  '#14B8A6',
+  '#F97316',
+  '#A855F7',
 ];
 
-// Helper to get initials
 export const getInitials = (name) => {
   if (!name || typeof name !== 'string') return 'U';
   const clean = name.trim();
@@ -25,14 +23,12 @@ export const getInitials = (name) => {
   if (parts.length >= 2) {
     return (parts[0][0] + parts[1][0]).toUpperCase();
   }
-  // Single word: take first 2 letters if available (e.g. "AD" for "admin", "JD" for "johndoe")
   if (clean.length >= 2) {
     return clean.slice(0, 2).toUpperCase();
   }
   return clean[0].toUpperCase();
 };
 
-// Deterministic color from username
 export const getAvatarColor = (name) => {
   if (!name || typeof name !== 'string') return AVATAR_PALETTE[0];
   let hash = 0;
@@ -57,7 +53,6 @@ const Avatar = ({
   const isGuestUser =
     isGuest || (typeof name === 'string' && name.trim().toLowerCase() === 'guest');
 
-  // Виключення для гостя: завжди показуємо дефолтну аватарку без літер
   if (isGuestUser) {
     if (imgError) {
       return (
@@ -108,7 +103,6 @@ const Avatar = ({
     );
   }
 
-  // Check if we have a real custom image (not default-avatar.png)
   const isDefaultImage = !src || src.includes('default-avatar.png');
   const showInitials = isDefaultImage || imgError;
 

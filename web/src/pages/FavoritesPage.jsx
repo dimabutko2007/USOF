@@ -4,6 +4,7 @@ import { fetchFavorites } from '../store/favoritesSlice';
 import { categoriesApi } from '../api/extraApis';
 import PostCard from '../components/posts/PostCard';
 import PostFilterToolbar from '../components/posts/PostFilterToolbar';
+import Pagination from '../components/common/Pagination';
 import { Star, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -16,6 +17,8 @@ const FavoritesPage = () => {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   useEffect(() => {
     dispatch(fetchFavorites());
@@ -79,13 +82,22 @@ const FavoritesPage = () => {
         if (scoreA !== scoreB) return scoreA - scoreB;
         return dateA - dateB;
       } else {
-        // 'date_desc' (Default: recently added)
         return dateB - dateA;
       }
     });
 
     return result;
   }, [favorites, sort, selectedCategories, startDate, endDate]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sort, selectedCategories, startDate, endDate]);
+
+  const totalPages = Math.ceil(filteredFavorites.length / pageSize) || 1;
+  const paginatedFavorites = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredFavorites.slice(startIndex, startIndex + pageSize);
+  }, [filteredFavorites, currentPage, pageSize]);
 
   const hasActiveFilters =
     selectedCategories.length > 0 || Boolean(startDate) || Boolean(endDate);
@@ -148,7 +160,19 @@ const FavoritesPage = () => {
           </button>
         </div>
       ) : (
-        filteredFavorites.map((post) => <PostCard key={post.id} post={post} />)
+        <>
+          {paginatedFavorites.map((post) => (
+            <PostCard key={post.id} post={post} />
+          ))}
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredFavorites.length}
+            onPageChange={setCurrentPage}
+            itemName="saved questions"
+          />
+        </>
       )}
     </div>
   );

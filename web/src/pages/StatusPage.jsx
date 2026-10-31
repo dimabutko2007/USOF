@@ -48,7 +48,6 @@ const StatusPage = () => {
 
   useEffect(() => {
     checkHealth();
-    // Auto-refresh every 30 seconds
     const timer = setInterval(checkHealth, 30000);
     return () => clearInterval(timer);
   }, []);

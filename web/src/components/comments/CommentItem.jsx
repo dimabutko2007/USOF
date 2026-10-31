@@ -31,7 +31,6 @@ const CommentItem = ({ comment, postId, childrenComments = [] }) => {
   const [replyText, setReplyText] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
 
-  // Edit comment state
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(comment.content || '');
   const [submittingEdit, setSubmittingEdit] = useState(false);
@@ -45,7 +44,6 @@ const CommentItem = ({ comment, postId, childrenComments = [] }) => {
   const isAuthor = isAuthenticated && user?.id === comment.author_id;
   const isAuthorOrAdmin = isAuthenticated && (user?.id === comment.author_id || role === 'admin');
 
-  // Avatar URL resolver
   const authorAvatar = comment.author_avatar
     ? comment.author_avatar.startsWith('/uploads')
       ? comment.author_avatar

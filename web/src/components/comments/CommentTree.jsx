@@ -12,7 +12,6 @@ const CommentTree = ({ postId }) => {
   const [newCommentText, setNewCommentText] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Build recursive tree from linear comment array
   const buildTree = (list) => {
     const map = {};
     const roots = [];

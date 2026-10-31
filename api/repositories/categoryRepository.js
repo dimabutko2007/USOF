@@ -29,7 +29,6 @@ class CategoryRepository {
       }
       this._ensured = true;
     } catch (e) {
-      // Ignore if table not yet initialized
     }
   }
 
@@ -128,21 +127,18 @@ class CategoryRepository {
     try {
       await connection.beginTransaction();
 
-      // Find all posts that currently have oldCatId
       const [postsWithOldCat] = await connection.query(
         `SELECT post_id FROM post_categories WHERE category_id = ?;`,
         [oldCatId]
       );
 
       for (const row of postsWithOldCat) {
-        // Assign general category if post does not already have it
         await connection.query(
           `INSERT IGNORE INTO post_categories (post_id, category_id) VALUES (?, ?);`,
           [row.post_id, generalCatId]
         );
       }
 
-      // Delete old category (foreign key CASCADE removes post_categories references)
       await connection.query(
         `DELETE FROM categories WHERE id = ?;`,
         [oldCatId]

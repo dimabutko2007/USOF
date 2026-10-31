@@ -110,7 +110,6 @@ class UserService {
       if (existing) throw ApiError.conflict('Email is already taken.');
     }
 
-    // Only allow changing email if user is updating their own profile
     const finalEmail = (currentSessionUser.id === parseInt(userId, 10)) ? email : undefined;
 
     await userRepository.update(userId, {
