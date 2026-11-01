@@ -3,23 +3,292 @@
 ![Stack](https://img.shields.io/badge/Stack-React%20%7C%20Redux%20Toolkit%20%7C%20Node.js%20%7C%20Express%20%7C%20MySQL-blue)
 ![Architecture](https://img.shields.io/badge/Architecture-SPA%20%2B%20REST%20API%20%7C%20MVC%20%7C%20SOLID-purple)
 ![Design](https://img.shields.io/badge/Design-Modern%20Developer%20Dark%20%2F%20Light%20Aesthetic-darkgreen)
-![Status](https://img.shields.io/badge/Build-Passing-brightgreen)
+![Security](https://img.shields.io/badge/Security-bcrypt%20%7C%20HTTP--Only%20Sessions%20%7C%20Parameterized%20SQL-red)
+![Build](https://img.shields.io/badge/Build-Passing-brightgreen)
 
 ---
 
 ## 1. Project Overview
 
-**USOF** (User Stack Overflow) is a full-featured, modern question-and-answer platform built for the software developer community. Inspired by Stack Overflow and engineered according to contemporary industry standards, USOF provides a seamless space for asking technical questions, sharing programming solutions, engaging in threaded discussions, and building reputation.
+**USOF** (User Stack Overflow) is an enterprise-grade, modern question-and-answer platform tailored for software developers and technical teams. Inspired by Stack Overflow and engineered according to contemporary Challenge-Based Learning (CBL) standards, USOF delivers a high-performance space for asking technical questions, sharing code solutions, engaging in arbitrarily deep threaded discussions, and building developer reputation.
 
-The platform consists of two decoupled components:
-1. **`web/` (Frontend)**: A responsive Single Page Application (SPA) powered by **React**, **Redux Toolkit** for predictable state management, **React Router**, and a clean, lightweight CSS design system supporting native **Dark / Light Theme** switching. It features rich threaded discussions, comprehensive sorting and filtering, draft management, interactive reactions, and intuitive media attachments.
-2. **`api/` (Backend)**: A robust RESTful API built on **Node.js / Express**, structured using **MVC**, **SOLID principles**, and the **Repository Pattern**. It interfaces with a normalized relational database (**MySQL 8.0**, 3NF), manages server-side sessions stored in MySQL, and provides secure role-based access control (RBAC).
+The platform is decoupled into two primary architectures:
+1. **`web/` (Frontend Client)**: A reactive Single Page Application (SPA) built with **React 18**, **Redux Toolkit** for centralized state management, **React Router**, and a lightweight CSS design system supporting native **Dark / Light Theme** switching. It features responsive drawer navigation, threaded comment hierarchies, multi-criteria filtering, draft management, and interactive media attachments.
+2. **`api/` (Backend Server)**: A robust RESTful API built on **Node.js / Express**, adhering strictly to **MVC**, **SOLID principles**, and the **Repository Pattern**. It interfaces with a normalized relational database (**MySQL 8.0**, 3NF), manages server-side sessions stored in MySQL (`express-mysql-session`), and enforces strict Role-Based Access Control (RBAC).
 
 ---
 
-## 2. Repository Structure
+## 2. Screenshots of Solution
 
-The codebase is organized into clear domain boundaries:
+> [!NOTE]
+> Screenshots showcase the user interface in actual operation across different workflows and screen viewports. Image files are placed in the `./screenshots/` directory.
+
+### 2.1 Questions Feed & Developer Theme (Dark & Light Mode)
+| Dark Theme Feed | Light Theme Feed |
+| :---: | :---: |
+| ![Home Feed - Dark Mode](./screenshots/home-dark.png) | ![Home Feed - Light Mode](./screenshots/home-light.png) |
+| *Real-time question search, category tags, rating scores, and 10-item pagination* | *Instant theme switching with persistent localStorage preferences* |
+
+---
+
+### 2.2 Question Details & Threaded Discussion Tree
+| Full Question View & Image Gallery | Threaded Nested Comments Hierarchy |
+| :---: | :---: |
+| ![Question Details](./screenshots/post-details.png) | ![Threaded Discussion](./screenshots/post-comments.png) |
+| *Technical question with attached image gallery, author details, and bookmarking* | *Arbitrary-depth recursive replies with indentation guides and vote counters* |
+
+---
+
+### 2.3 Creation & Management Modals
+| Ask Question Modal (Multi-Image Upload) | Inline Comment Editing |
+| :---: | :---: |
+| ![Create Question](./screenshots/create-post.png) | ![Edit Comment](./screenshots/edit-comment.png) |
+| *Tag selection, draft toggle, and multi-file drag-and-drop attachment* | *In-place comment modification reserved exclusively for original authors* |
+
+---
+
+### 2.4 Profile Management & Privacy Boundaries
+| Member Profile (Email Protected) | Category Management (Safe Deletion) |
+| :---: | :---: |
+| ![User Profile](./screenshots/profile.png) | ![Category Management](./screenshots/categories.png) |
+| *Reputation score, avatar upload, and email hidden from non-admin viewers* | *Topic catalog with automated reassignment of posts to General Discussions* |
+
+---
+
+### 2.5 Platform Analytics & Mobile Responsive Experience
+| Real-time Analytics & Leaderboard | Mobile Off-Canvas Drawer & Search |
+| :---: | :---: |
+| ![Platform Analytics](./screenshots/stats.png) | ![Mobile View](./screenshots/mobile-view.png) |
+| *Key metric counters, top contributor rankings, and recent platform activity* | *Responsive slide-over drawer and dedicated search panel for small screens* |
+
+---
+
+## 3. Description of Core Algorithms & Business Logic
+
+### 3.1 Threaded Comments Algorithm (Arbitrary-Depth Adjacency Tree)
+In technical discussions, conversations naturally branch into sub-threads. USOF implements an in-memory, arbitrary-depth recursive tree generation algorithm that runs in optimal linear time:
+
+```
+Database (Flat Adjacency List)              In-Memory Tree Transformation               Recursive UI Hierarchy
+┌─────────────────────────────┐             ┌─────────────────────────────┐             ┌─────────────────────────────┐
+│ id: 1, parent_id: null      │             │ Comment #1 (Root)           │             │ 💬 Root Comment #1          │
+│ id: 2, parent_id: 1         │    ─────►   │   └── children: [           │    ─────►   │    ├── 💬 Reply #2          │
+│ id: 3, parent_id: 2         │    O(N)     │         Comment #2          │             │    │    └── 💬 Reply #3      │
+│ id: 4, parent_id: 1         │             │           └── Comment #3,   │             │    └── 💬 Reply #4          │
+│                             │             │         Comment #4          │             │                             │
+└─────────────────────────────┘             └─────────────────────────────┘             └─────────────────────────────┘
+```
+
+1. **Relational Model**: The `comments` table stores comments with an adjacency reference: `parent_id` (a self-referential foreign key referencing `comments.id` on delete cascade). A `parent_id = NULL` signifies a root comment.
+2. **Linear Transformation ($O(N)$)**:
+   - When retrieving comments for a question, the SQL layer fetches all comments in a single query sorted according to user preference (by default, ascending by likes count).
+   - An index hash map `Map<comment_id, CommentNode>` is initialized, attaching an empty `children: []` array to every node.
+   - A single iteration links child nodes to their respective parent's `children` array:
+     ```javascript
+     const buildTree = (commentsList) => {
+       const map = {};
+       const roots = [];
+       commentsList.forEach(item => { map[item.id] = { ...item, children: [] }; });
+       commentsList.forEach(item => {
+         if (item.parent_id && map[item.parent_id]) {
+           map[item.parent_id].children.push(map[item.id]);
+         } else {
+           roots.push(map[item.id]);
+         }
+       });
+       return roots;
+     };
+     ```
+3. **Recursive Rendering**: The frontend component `CommentTree` renders each root node via `CommentItem`, which recursively renders its own `children` array with dynamic indentation, visual nesting borders (`border-left: 2px solid var(--border-color)`), and independent reply forms.
+
+---
+
+### 3.2 Real-Time User Rating & Reputation Algorithm
+Developer reputation reflects active community contributions. The platform computes user rating dynamically using an aggregated mathematical formula:
+
+$$\text{User Rating} = \sum (\text{Post Likes} - \text{Post Dislikes}) + \sum (\text{Comment Likes} - \text{Comment Dislikes})$$
+
+- **Execution**: Whenever any user adds, alters, or removes a reaction (upvote/downvote) on a question or comment, the backend triggers `userRepository.recalculateRating(targetAuthorId)`.
+- **Atomic SQL Implementation**:
+  ```sql
+  UPDATE users u
+  SET rating = (
+    COALESCE((SELECT COUNT(*) FROM likes l JOIN posts p ON l.target_type = 'post' AND l.target_id = p.id WHERE p.author_id = ? AND l.type = 'like'), 0)
+    +
+    COALESCE((SELECT COUNT(*) FROM likes l JOIN comments c ON l.target_type = 'comment' AND l.target_id = c.id WHERE c.author_id = ? AND l.type = 'like'), 0)
+    -
+    COALESCE((SELECT COUNT(*) FROM likes l JOIN posts p ON l.target_type = 'post' AND l.target_id = p.id WHERE p.author_id = ? AND l.type = 'dislike'), 0)
+    -
+    COALESCE((SELECT COUNT(*) FROM likes l JOIN comments c ON l.target_type = 'comment' AND l.target_id = c.id WHERE c.author_id = ? AND l.type = 'dislike'), 0)
+  )
+  WHERE u.id = ?;
+  ```
+- **Integrity**: Rating calculations are atomic, immune to race conditions, and update instantly on both the author's profile and the platform leaderboard (`/stats`).
+
+---
+
+### 3.3 Safe Category Deletion & Orphan Prevention Algorithm
+To prevent questions from being left without topics when an administrator removes an obsolete or duplicated category, USOF implements a strict cascading migration algorithm:
+
+```
+[Admin requests DELETE /api/categories/:id]
+                    │
+                    ▼
+   Is category "General Discussions"?
+      ├── YES ──► ABORT: Return HTTP 400 "Protected Category"
+      └── NO  ──► Proceed
+                    │
+                    ▼
+   Locate or Auto-Create baseline category "General Discussions"
+                    │
+                    ▼
+   Find all questions linked to deleted category
+                    │
+                    ▼
+   For each question:
+      ├── Does question already have "General Discussions"?
+      │      ├── YES ──► Keep existing association
+      │      └── NO  ──► Link question to "General Discussions"
+      └── Remove link to the deleted category
+                    │
+                    ▼
+   Execute atomic DELETE on target category
+                    │
+                    ▼
+   Result: Zero Orphan Questions Guaranteed
+```
+
+1. **Root Category Protection**: The default category `General Discussions` is protected at the service layer; any deletion attempt throws an `ApiError.badRequest`.
+2. **Post Reassignment**: If category `Java` (ID 3) is deleted, all posts tagged with `Java` are checked:
+   - If a post is only tagged with `Java`, its tag is safely migrated to `General Discussions`.
+   - If a post is tagged with `Java` and `Spring`, `Java` is unlinked while `Spring` remains intact.
+3. **Database Consistency**: Guarantees referential integrity without leaving orphan records or breaking category-filtered feeds.
+
+---
+
+### 3.4 10-Item Page Splitting & Pagination Algorithm
+To maintain optimal render performance, the platform strictly caps all post feeds to **10 questions per page**:
+- **Backend Offset Math**:
+  $$\text{Offset} = (\text{Page} - 1) \times 10, \quad \text{Limit} = 10$$
+- **Dual Query Strategy**:
+  1. `SELECT ... FROM posts ... LIMIT 10 OFFSET :offset` retrieves the active page slice.
+  2. `SELECT COUNT(DISTINCT p.id) AS total FROM posts ...` computes the exact dataset size under all active filters.
+  3. Total pages: `pages = Math.ceil(total / 10) || 1`.
+- **Page Overflow Rule**: When an 11th question is added, it automatically splits onto Page 2.
+- **Client-Side Smart Pagination Window**: For high page counts ($>7$), `Pagination.jsx` renders an ellipsis window (e.g. `1 ... 4 5 6 ... 20`) with previous/next controls, preventing UI overflow on small mobile screens.
+
+---
+
+## 4. Security, Validation & Best Practices
+
+| Security Dimension | Technical Implementation & Safeguards |
+| :--- | :--- |
+| **Password Storage** | Passwords are cryptographic hashes produced via **`bcrypt` with 10 salt rounds**. Raw passwords are never persisted to disk or logs and cannot be recovered via dictionary or rainbow-table attacks. |
+| **XSS Defense** | React’s virtual DOM escapes all dynamic values by default before rendering them to HTML. Raw `dangerouslySetInnerHTML` is prohibited across the codebase, neutralizing injected `<script>` tags or malicious HTML vectors. |
+| **SQL Injection Immunity** | **100% of SQL interactions** across all repository classes (`api/repositories/`) use parameterized prepared statements (`?` placeholders) executed via `mysql2/promise`. Input parameters are never concatenated into SQL strings. |
+| **Session Security** | Sessions are managed via **`express-session` backed by a persistent MySQL store (`express-mysql-session`)**. Session cookies are stamped with `httpOnly: true` (blocking unauthorized client-side JavaScript access) and `sameSite: 'lax'`. Server-side session records are destroyed on logout. |
+| **Role-Based Access Control (RBAC)** | Protected endpoints use layered middleware: `isAuthenticated` verifies session state, and `checkRole('admin')` validates administrative privileges. Unauthorized requests are rejected with standardized HTTP `401 Unauthorized` or `403 Forbidden`. |
+| **Data Privacy & Email Masking** | In compliance with privacy guidelines, a user's registered email address is **strictly confidential**: it is sent only to the account owner and platform administrators. For all other users and guests, the email field is scrubbed at the service layer (`email: null`). |
+| **Draft Protection** | Inactive questions (drafts) are filtered at the database level (`p.status = 'active' OR p.author_id = :currentUser`). Regular users and guests cannot inspect or access another member's draft posts. |
+| **Input Validation** | Every client form and backend controller validates incoming payloads: username minimum length and uniqueness, standard email format regex, password confirmation matches, non-empty question titles ($\ge 5$ characters), body content ($\ge 10$ characters), and valid image formats (`image/png`, `image/jpeg`, `image/webp`). User-friendly errors are displayed immediately. |
+
+---
+
+## 5. Complete REST API Reference
+
+All backend endpoints are prefixed with `/api`. Protected endpoints require an active session cookie (`usof_sid`).
+
+### 5.1 Authentication (`/api/auth`)
+| Method | Endpoint | Access Level | Description & Parameters |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/register` | 🟢 Public | Register new account (`login`, `password`, `password_confirmation`, `email`, `full_name`) |
+| `POST` | `/api/auth/login` | 🟢 Public | Authenticate user via username or email (`login`, `password`) |
+| `POST` | `/api/auth/logout` | 🟡 Authenticated | Invalidate active session and clear session cookie |
+| `GET` | `/api/auth/me` | 🟢 Public / User | Return session identity and role of current user |
+| `GET` | `/api/auth/confirm-email/:confirm_token` | 🟢 Public | Verify newly registered user email address via confirmation token |
+| `POST` | `/api/auth/password-reset` | 🟢 Public | Send password reset token to registered email (`email`) |
+| `POST` | `/api/auth/password-reset/:confirm_token` | 🟢 Public | Reset account password using token (`password`, `password_confirmation`) |
+
+---
+
+### 5.2 Users & Profiles (`/api/users`)
+| Method | Endpoint | Access Level | Description & Parameters |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/users` | 🟢 Public | Retrieve list of registered users with ratings and roles |
+| `GET` | `/api/users/:user_id` | 🟡 Authenticated | Retrieve user profile (Email exposed only to Owner or Admin) |
+| `POST` | `/api/users` | 🔴 Admin Only | Create user account directly (`login`, `password`, `email`, `role`) |
+| `PATCH` | `/api/users/avatar` | 🟡 Authenticated | Upload or change avatar for current logged-in user (`multipart/form-data`) |
+| `PATCH` | `/api/users/:user_id/avatar` | 🟡 Owner / Admin | Upload or change avatar for specified user (Owner or Admin) |
+| `PATCH` | `/api/users/:user_id` | 🟡 Owner / Admin | Update profile info (`full_name`, `login`, `email` [Owner only]) |
+| `DELETE` | `/api/users/:user_id` | 🟡 Owner / Admin | Delete user account and cascade associated data |
+
+---
+
+### 5.3 Questions & Posts (`/api/posts`)
+| Method | Endpoint | Access Level | Description & Parameters |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/posts` | 🟢 Public | Get paginated list of posts (10 items/page; filters: `page`, `limit`, `sort`, `categories`, `search`, `status`) |
+| `GET` | `/api/posts/:post_id` | 🟢 Public | Get single question by ID with attached media and author details |
+| `GET` | `/api/posts/:post_id/categories` | 🟢 Public | Retrieve categories attached to a specific post |
+| `POST` | `/api/posts` | 🟡 Authenticated | Create question (`title`, `content`, `categories`, `status`, optional `images` array max 5) |
+| `PATCH` | `/api/posts/:post_id` | 🟡 Owner / Admin | Update question content, title, tags, and attached photos |
+| `PATCH` | `/api/posts/:post_id/status` | 🟡 Owner / Admin | Toggle post status between `active` and `inactive` (Draft) |
+| `DELETE` | `/api/posts/:post_id` | 🟡 Owner / Admin | Delete question and attached media/comments |
+| `GET` | `/api/posts/:post_id/subscription` | 🟡 Authenticated | Check if current user is subscribed to post updates |
+| `POST` | `/api/posts/:post_id/subscribe` | 🟡 Authenticated | Subscribe to question updates and notifications |
+| `DELETE` | `/api/posts/:post_id/subscribe` | 🟡 Authenticated | Unsubscribe from question updates |
+
+---
+
+### 5.4 Comments & Threaded Discussions (`/api/posts/:id/comments`, `/api/comments`)
+| Method | Endpoint | Access Level | Description & Parameters |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/posts/:post_id/comments` | 🟢 Public | Get all comments for post (Default sorted by likes count ascending; supports `sort`) |
+| `POST` | `/api/posts/:post_id/comments` | 🟡 Authenticated | Post a comment or reply (`content`, optional `parent_id` for nested replies) |
+| `GET` | `/api/comments/:comment_id` | 🟢 Public | Retrieve single comment details |
+| `PATCH` | `/api/comments/:comment_id` | 🟡 Owner Only | Edit own comment content (`content`). Admins cannot alter user comments |
+| `DELETE` | `/api/comments/:comment_id` | 🟡 Owner / Admin | Delete comment and cascade child replies |
+
+---
+
+### 5.5 Reactions & Voting (`/api/posts/:id/like`, `/api/comments/:id/like`)
+| Method | Endpoint | Access Level | Description & Parameters |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/posts/:post_id/like` | 🟢 Public | Get like/dislike counts and current user's reaction for post |
+| `POST` | `/api/posts/:post_id/like` | 🟡 Authenticated | Upvote or downvote question (`type`: `'like'` or `'dislike'`) |
+| `DELETE` | `/api/posts/:post_id/like` | 🟡 Authenticated | Remove vote reaction from question |
+| `GET` | `/api/comments/:comment_id/like` | 🟢 Public | Get like/dislike counts and current user's reaction for comment |
+| `POST` | `/api/comments/:comment_id/like` | 🟡 Authenticated | Upvote or downvote comment (`type`: `'like'` or `'dislike'`) |
+| `DELETE` | `/api/comments/:comment_id/like` | 🟡 Authenticated | Remove vote reaction from comment |
+
+---
+
+### 5.6 Categories (`/api/categories`)
+| Method | Endpoint | Access Level | Description & Parameters |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/categories` | 🟢 Public | List all technical topic categories |
+| `GET` | `/api/categories/:category_id` | 🟢 Public | Get category details by ID |
+| `GET` | `/api/categories/:category_id/posts` | 🟢 Public | Get all questions associated with specific category |
+| `POST` | `/api/categories` | 🔴 Admin Only | Create new topic category (`title`, `description`) |
+| `PATCH` | `/api/categories/:category_id` | 🔴 Admin Only | Edit category title or description |
+| `DELETE` | `/api/categories/:category_id` | 🔴 Admin Only | Safely delete category with automatic post transfer to `General Discussions` |
+
+---
+
+### 5.7 Favorites, Subscriptions & Notifications
+| Method | Endpoint | Access Level | Description & Parameters |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/favorites` | 🟡 Authenticated | Get list of questions bookmarked by current user |
+| `POST` | `/api/posts/:post_id/favorite` | 🟡 Authenticated | Add question to personal favorites |
+| `DELETE` | `/api/posts/:post_id/favorite` | 🟡 Authenticated | Remove question from personal favorites |
+| `GET` | `/api/subscriptions` | 🟡 Authenticated | Get list of followed questions with sorting and tag filtering |
+| `GET` | `/api/notifications` | 🟡 Authenticated | Retrieve recent user notifications and unread counters |
+| `PATCH` | `/api/notifications/:id/read` | 🟡 Authenticated | Mark specific notification as read |
+| `GET` | `/api/health` | 🟢 Public | Real-time backend server uptime and health check |
+
+---
+
+## 6. Repository Structure
 
 ```
 USOF/
@@ -30,7 +299,7 @@ USOF/
 │   ├── middlewares/               # Authentication, RBAC, error handling, and Multer file upload
 │   ├── repositories/              # Direct database abstraction layer (parameterized SQL queries)
 │   ├── routes/                    # Express REST route declarations
-│   ├── services/                  # Business logic services
+│   ├── services/                  # Business logic services (safe deletion, notifications, etc.)
 │   ├── uploads/                   # Uploaded static assets (avatars and post attachments)
 │   ├── app.js                     # Express app setup, CORS, and session management
 │   ├── package.json               # Backend dependencies and scripts
@@ -42,30 +311,27 @@ USOF/
 │   │   ├── api/                   # API client layer (Axios instances with interceptors)
 │   │   ├── components/
 │   │   │   ├── comments/          # Threaded comment hierarchy (CommentItem, CommentTree)
-│   │   │   ├── common/            # Shared UI components (Avatar, etc.)
+│   │   │   ├── common/            # Shared UI components (Avatar, Pagination, etc.)
 │   │   │   ├── layout/            # Header, Sidebar, Footer, MainLayout
 │   │   │   └── posts/             # PostCard, CreatePostModal, PostFilterToolbar
 │   │   ├── context/               # ThemeContext (Dark/Light mode toggler)
-│   │   ├── pages/                 # Full-page views:
-│   │   │                          # HomePage, PostDetailsPage, ProfilePage, CategoriesPage,
-│   │   │                          # FavoritesPage, SubscriptionsPage, StatsPage,
-│   │   │                          # GuidelinesPage, PrivacyPage, StatusPage, NotFoundPage,
-│   │   │                          # LoginPage, RegisterPage, PasswordResetPage
-│   │   ├── store/                 # Redux Toolkit store (auth, posts, comments, notifications, etc.)
-│   │   ├── styles/                # Pure CSS stylesheets (theme.css, global.css, layout.css)
+│   │   ├── pages/                 # Full-page views (Feed, Post Details, Profiles, etc.)
+│   │   ├── store/                 # Redux Toolkit store slices
+│   │   ├── styles/                # Modular CSS stylesheets (theme.css, global.css, layout.css)
 │   │   ├── App.jsx                # Client-side router configuration
 │   │   └── main.jsx               # Application entry point
 │   ├── index.html
 │   ├── package.json               # Frontend dependencies and Vite build scripts
 │   └── vite.config.js             # Dev server proxy configuration (/api and /uploads)
 │
+├── screenshots/                   # Solution screenshots directory for peer review
 ├── package.json                   # Root manifest for concurrent workspace execution
 └── README.md                      # Comprehensive project documentation
 ```
 
 ---
 
-## 3. How to Run Locally
+## 7. How to Run Locally
 
 ### Prerequisites
 - **Node.js**: `v18.0.0` or newer (recommended `v20.x` or `v22.x LTS`).
@@ -83,7 +349,7 @@ cd USOF
 ---
 
 ### Step 2. Install Dependencies
-Install the required packages across the root, backend, and frontend:
+Install packages across root, backend, and frontend:
 ```bash
 # Install root orchestration tools
 npm install
@@ -98,7 +364,7 @@ cd web && npm install && cd ..
 ---
 
 ### Step 3. Configure Environment Variables
-Create a `.env` file in the `api/` directory (you can copy the provided example):
+Create a `.env` file in the `api/` directory:
 ```bash
 cp api/.env.example api/.env
 ```
@@ -117,176 +383,45 @@ DB_NAME=usof_db
 
 ---
 
-### Step 4. Initialize and Seed the Database
-Execute the initialization and seeding scripts to generate normalized tables and populate rich mock data ($\ge 5$ records per table across all 11 tables):
+### Step 4. Initialize and Seed Database
+Execute the automated migration and seeding scripts to generate normalized tables and populate diverse mock data (5 users, 10 diverse questions, categories, comments, and likes):
 ```bash
 # Create all MySQL tables, indexes, and foreign keys
 npm run db:init
 
-# Seed database with sample users, categories, questions, comments, likes, subscriptions, etc.
+# Populate database with realistic test records
 npm run db:seed
 ```
 
 ---
 
-### Step 5. Run the Project
-Start both the backend API server and the frontend client concurrently with a single command from the root directory:
+### Step 5. Run the Project Concurrently
+Launch both backend and frontend servers with a single command from the project root:
 ```bash
 npm run dev
 ```
 
-Once running:
-- 🌐 **Frontend (Web App)**: [http://localhost:5173](http://localhost:5173)
-- ⚙️ **Backend (REST API)**: [http://localhost:3000](http://localhost:3000)
-- 🩺 **Health Check Endpoint**: [http://localhost:3000/api/health](http://localhost:3000/api/health)
+- 🌐 **Frontend Web Client**: [http://localhost:5173](http://localhost:5173)
+- ⚙️ **Backend REST API**: [http://localhost:3000](http://localhost:3000)
+- 🩺 **Health Check**: [http://localhost:3000/api/health](http://localhost:3000/api/health)
 
 ---
 
 ### Step 6. Automated Testing (API Verification)
-Run the automated end-to-end API test suite to verify route integrity, validation, and database operations:
+Execute the end-to-end API test verification suite:
 ```bash
 npm run test:api
 ```
 
 ---
 
-## 4. Challenge-Based Learning (CBL) Breakdown
-
-### 4.1 Engage
-- **Core Challenge**: Developers require a fast, distraction-free environment to ask questions, solve complex bugs, and share knowledge without obsolete UI clutter or bloated third-party styling frameworks.
-- **Goal**: Architect an end-to-end, high-performance SPA + REST API solution with enterprise-grade security, threaded conversations, strict privacy controls, and a bespoke developer aesthetic.
-
-### 4.2 Investigate
-- **Technology Evaluation**: Selected React combined with Redux Toolkit for predictable data flow, alongside native CSS variables for instant theme switching without runtime overhead.
-- **Architectural Paradigm**:
-  - Clear separation between the client presentation layer (`web/`) and the API domain layer (`api/`).
-  - Session authentication backed by `express-mysql-session` and HTTP-only cookies, secured with CORS and transparent Vite dev proxies.
-  - Recursive tree assembly for unlimited depth of threaded discussions (`parent_id`).
-  - Cascading relational integrity with automated fallback migrations upon entity removal.
-
-### 4.3 Act: Core & Required Features
-1. **Global Header & Navigation**:
-   - Platform brand identity featuring the official `logo.png`.
-   - Real-time question search by title and content.
-   - User profile badge with avatar and role indicators (`Admin`, `User`, `Guest`).
-   - One-click logout available across all views.
-2. **Sidebar & Menu Navigation**:
-   - Quick navigation between Questions Feed, Topic Categories, Favorites, Subscriptions, and Analytics.
-   - Dedicated "Ask Question" modal launcher.
-3. **Questions Feed (Home Page)**:
-   - Rich previews containing titles, authors, avatars, timestamps, category tags, net vote scores, and answer counters.
-   - Dual-mode sorting: **Highest / Lowest Rating** and **Recently Added / Oldest** (defaulting to Recently Added).
-   - Filter toolbar with multi-category selection, date range pickers, and status filters.
-   - Server-side pagination with page selectors and total item counts.
-4. **Question Details & Threaded Discussions**:
-   - Comprehensive view of questions with Markdown support and multi-image galleries (`post_images`).
-   - **Threaded Comment Tree**: Hierarchical replies with visual indentation lines.
-   - **Default Comment Sorting**: Comments ordered by likes count ascending, with options to reorder.
-   - **Inactive & Draft Handling**: Inactive questions/comments are visibly tagged and restricted according to ownership rules.
-   - **Vote Reactions**: Upvote and downvote counters with optimistic client-side updates and toggling (untoggle on duplicate click).
-5. **Interactive Comment Editing**:
-   - Authors can edit the content of their comments inline; administrators cannot alter another user's comment text.
-6. **User Profiles & Privacy**:
-   - Authenticated members and administrators can view user profiles; guest access is restricted.
-   - Profiles display user identity, avatar, role, reputation score, join date, and personal publications.
-   - **Privacy Policy Compliance**: User email addresses are displayed **strictly to administrators and the account owner**; emails are omitted for other viewers.
-   - **Administrative Profile Management**: Administrators can edit usernames (`login`), full names, and update profile avatars for any account. Email modification is reserved for the account owner.
-7. **Drafts & Question Visibility (Drafts System)**:
-   - Question authors can hide their questions (set to `inactive` / draft) or publish them at any time.
-   - Supported at creation time via "Save as Draft", in question cards via an eye toggle button (`Eye` / `EyeOff`), and in the question details view.
-   - Drafts remain strictly private to the author and administrators.
-8. **Topic Categories & Safe Deletion**:
-   - Comprehensive catalog of development topics and technologies.
-   - Administrators can add new categories and delete existing ones.
-   - **Default Category Protection**: The `General Discussions` category is protected and cannot be deleted.
-   - **Automatic Reassignment**: When an administrator deletes a category (e.g., `Java`), all questions utilizing it are automatically transferred to `General Discussions` (if not already attached), ensuring zero orphan posts.
-
-### 4.4 Act: Creative & Enhanced Features
-1. **Modern Developer Theme (Dark & Light Mode)**:
-   - High-contrast, polished developer aesthetic built on a Slate color palette, JetBrains-style code typography, and subtle glowing borders.
-   - Persistent theme toggle stored in `localStorage`.
-2. **Post Subscriptions & Feed (`/subscriptions`)**:
-   - Follow questions to receive updates on new answers and status changes.
-   - Dedicated subscriptions view with sorting and tag filtering.
-3. **Personal Favorites Collection (`/favorites`)**:
-   - Save essential references and solutions in one click with instant filter controls.
-4. **In-App Notifications**:
-   - Notification dropdown menu in the header displaying real-time updates and unread counters.
-5. **Analytics & Leaderboard Dashboard (`/stats`)**:
-   - Visual metrics covering total questions, registered contributors, topic diversity, top reputation leaderboard, and recent activity.
-6. **Auxiliary Information Pages**:
-   - Community **Guidelines** (`/guidelines`): Behavioral standards and communication code of conduct.
-   - **Privacy Policy** (`/privacy`): Plain-language policy emphasizing zero data sharing and authentication-only email retention.
-   - **API Health Status** (`/status`, `/health`): System status page connected directly to the backend health endpoint.
-   - **Custom 404 Page**: Branded, minimalist error page with quick navigation back to discussions.
-
----
-
-## 5. System Architecture & Request Lifecycle
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           Client Browser (React 18 SPA)                         │
-│   ┌─────────────────────────────────────────────────────────────────────────┐   │
-│   │                             ThemeContext                                │   │
-│   │             (Dark Theme / Light Theme with CSS Variables)               │   │
-│   └────────────────────────────────────┬────────────────────────────────────┘   │
-│                                        │                                        │
-│   ┌────────────────────────────────────▼────────────────────────────────────┐   │
-│   │                       React Router DOM (Routing)                        │   │
-│   │   /, /posts/:id, /users/:id, /categories, /favorites, /stats, etc.      │   │
-│   └────────────────────────────────────┬────────────────────────────────────┘   │
-│                                        │                                        │
-│   ┌────────────────────────────────────▼────────────────────────────────────┐   │
-│   │                         Redux Toolkit Store                             │   │
-│   │      authSlice  │  postsSlice  │  commentsSlice  │  notificationSlice   │   │
-│   └────────────────────────────────────┬────────────────────────────────────┘   │
-│                                        │                                        │
-│   ┌────────────────────────────────────▼────────────────────────────────────┐   │
-│   │                        Axios HTTP Client Layer                          │   │
-│   │             (baseURL: '/api', withCredentials: true)                    │   │
-│   └────────────────────────────────────┬────────────────────────────────────┘   │
-└────────────────────────────────────────┼────────────────────────────────────────┘
-                                         │ (Vite Proxy :5173 -> :3000)
-                                         ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                      Express.js REST API Server (:3000)                         │
-│   ┌─────────────────────────────────────────────────────────────────────────┐   │
-│   │            CORS & express-session (MySQLStore Session Engine)           │   │
-│   └────────────────────────────────────┬────────────────────────────────────┘   │
-│                                        │                                        │
-│   ┌────────────────────────────────────▼────────────────────────────────────┐   │
-│   │                       Layered Controller Layer                          │   │
-│   │     authController, postController, commentController, userController   │   │
-│   └────────────────────────────────────┬────────────────────────────────────┘   │
-│                                        │                                        │
-│   ┌────────────────────────────────────▼────────────────────────────────────┐   │
-│   │                        Domain Service Layer                             │   │
-│   │             Validation, Threading Logic, Notification Dispatch          │   │
-│   └────────────────────────────────────┬────────────────────────────────────┘   │
-│                                        │                                        │
-│   ┌────────────────────────────────────▼────────────────────────────────────┐   │
-│   │                       SQL Repository Layer                              │   │
-│   │        Parameterized Queries with mysql2/promise Connection Pool        │   │
-│   └────────────────────────────────────┬────────────────────────────────────┘   │
-│                                        │                                        │
-│   ┌────────────────────────────────────▼────────────────────────────────────┐   │
-│   │                         MySQL 8.0 Database (3NF)                        │   │
-│   │   users, posts, categories, comments (with parent_id), likes, favorites,│   │
-│   │   post_subscriptions, notifications, post_images, sessions              │   │
-│   └─────────────────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 6. Frontend Routes Catalog
+## 8. Frontend Routes Catalog
 
 | Route | Access Level | Description |
 | :--- | :--- | :--- |
-| `/` | 🟢 Public (Guests & Users) | Main feed: question previews, dual sorting, multi-tag filters, pagination |
-| `/posts/:id` | 🟢 Public | Full question view, attached media gallery, threaded comments, voting |
-| `/categories` | 🟢 Public | Topic tags directory with question discovery (Admin: create & safely delete categories) |
+| `/` | 🟢 Public | Questions Feed: dual sorting, multi-category filters, 10-item pagination |
+| `/posts/:id` | 🟢 Public | Full question view, attached image gallery, threaded comments, voting |
+| `/categories` | 🟢 Public | Topic tags directory with question discovery (Admin: create & safe delete) |
 | `/stats` | 🟢 Public | Platform analytics dashboard, contributor leaderboard, and platform metrics |
 | `/guidelines` | 🟢 Public | Community conduct rules and technical question quality standards |
 | `/privacy` | 🟢 Public | User data privacy declaration |
@@ -302,9 +437,9 @@ npm run test:api
 
 ---
 
-## 7. Pre-seeded Test Accounts
+## 9. Pre-seeded Test Accounts
 
-All test accounts are automatically generated during database seeding. Every account shares the same password: **`password123`**.
+All test accounts share the same password: **`password123`**.
 
 | Login | Password | Role | Permissions & Purpose |
 | :--- | :--- | :--- | :--- |
